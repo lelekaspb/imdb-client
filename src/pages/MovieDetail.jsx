@@ -140,10 +140,20 @@ function MovieDetail() {
       });
   }, [id]);
 
+  const breadcrumbs = [
+    { label: "Browse", path: "/" },
+    { label: movie?.primaryTitle || movie?.title || "Movie", active: true },
+  ];
+
   if (loading) {
     return (
       <div className="d-flex flex-column min-vh-100">
-        <Navbar pageName="Movie Details" />
+        <Navbar
+          breadcrumbs={[
+            { label: "Browse", path: "/" },
+            { label: "Movie", active: true },
+          ]}
+        />
         <Container fluid className="flex-grow-1 py-4 px-5">
           <div className="text-center py-5">
             <Spinner animation="border" role="status">
@@ -159,7 +169,12 @@ function MovieDetail() {
   if (error) {
     return (
       <div className="d-flex flex-column min-vh-100">
-        <Navbar pageName="Movie Details" />
+        <Navbar
+          breadcrumbs={[
+            { label: "Browse", path: "/" },
+            { label: "Movie", active: true },
+          ]}
+        />
         <Container fluid className="flex-grow-1 py-4 px-5">
           <Alert variant="danger">Error: {error}</Alert>
           <Button onClick={() => navigate(-1)}>Back to Browse</Button>
@@ -171,13 +186,7 @@ function MovieDetail() {
 
   return (
     <div className="d-flex flex-column min-vh-100">
-      <Navbar
-        pageName={
-          movie?.titleType === "tvSeries" || movie?.titleType === "tvMiniSeries"
-            ? "Series Details"
-            : "Movie Details"
-        }
-      />
+      <Navbar breadcrumbs={breadcrumbs} />
       <Container fluid className="flex-grow-1 py-4 px-5">
         <Button
           variant="secondary"
@@ -270,7 +279,16 @@ function MovieDetail() {
                   <Col key={index}>
                     <Card
                       className="h-100"
-                      onClick={() => navigate(`/person/${member.nconst}`)}
+                      onClick={() =>
+                        navigate(`/person/${member.nconst}`, {
+                          state: {
+                            from: {
+                              label: movie?.primaryTitle || movie?.title,
+                              path: `/movie/${id}`,
+                            },
+                          },
+                        })
+                      }
                       style={{ cursor: "pointer" }}
                     >
                       {member.profile_path ? (

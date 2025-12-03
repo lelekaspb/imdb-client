@@ -143,7 +143,12 @@ function SeriesDetail() {
   if (loading) {
     return (
       <div className="d-flex flex-column min-vh-100">
-        <Navbar pageName="Series Details" />
+        <Navbar
+          breadcrumbs={[
+            { label: "Browse", path: "/" },
+            { label: "Series", active: true },
+          ]}
+        />
         <Container fluid className="flex-grow-1 py-4 px-5">
           <div className="text-center py-5">
             <Spinner animation="border" role="status">
@@ -159,7 +164,12 @@ function SeriesDetail() {
   if (error) {
     return (
       <div className="d-flex flex-column min-vh-100">
-        <Navbar pageName="Series Details" />
+        <Navbar
+          breadcrumbs={[
+            { label: "Browse", path: "/" },
+            { label: "Series", active: true },
+          ]}
+        />
         <Container fluid className="flex-grow-1 py-4 px-5">
           <Alert variant="danger">Error: {error}</Alert>
           <Button onClick={() => navigate(-1)}>Back to Browse</Button>
@@ -169,13 +179,14 @@ function SeriesDetail() {
     );
   }
 
+  const breadcrumbs = [
+    { label: "Browse", path: "/" },
+    { label: series?.primaryTitle || series?.title || "Series", active: true },
+  ];
+
   return (
     <div className="d-flex flex-column min-vh-100">
-      <Navbar
-        pageName={
-          series?.titleType === "movie" ? "Movie Details" : "Series Details"
-        }
-      />
+      <Navbar breadcrumbs={breadcrumbs} />
       <Container fluid className="flex-grow-1 py-4 px-5">
         <Button
           variant="secondary"
@@ -265,7 +276,16 @@ function SeriesDetail() {
                   <Col key={index}>
                     <Card
                       className="h-100"
-                      onClick={() => navigate(`/person/${member.nconst}`)}
+                      onClick={() =>
+                        navigate(`/person/${member.nconst}`, {
+                          state: {
+                            from: {
+                              label: series?.primaryTitle || series?.title,
+                              path: `/series/${id}`,
+                            },
+                          },
+                        })
+                      }
                       style={{ cursor: "pointer" }}
                     >
                       {member.profile_path ? (

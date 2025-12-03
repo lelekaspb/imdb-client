@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   Container,
   Row,
@@ -16,6 +16,7 @@ import Footer from "../components/Footer";
 function PersonDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [person, setPerson] = useState(null);
   const [filmography, setFilmography] = useState([]);
   const [images, setImages] = useState([]);
@@ -127,7 +128,12 @@ function PersonDetail() {
   if (loading) {
     return (
       <div className="d-flex flex-column min-vh-100">
-        <Navbar pageName="Person Details" />
+        <Navbar
+          breadcrumbs={[
+            { label: "Browse", path: "/" },
+            { label: "Person", active: true },
+          ]}
+        />
         <Container fluid className="flex-grow-1 py-4 px-5">
           <div className="text-center py-5">
             <Spinner animation="border" role="status">
@@ -143,7 +149,12 @@ function PersonDetail() {
   if (error) {
     return (
       <div className="d-flex flex-column min-vh-100">
-        <Navbar pageName="Person Details" />
+        <Navbar
+          breadcrumbs={[
+            { label: "Browse", path: "/" },
+            { label: "Person", active: true },
+          ]}
+        />
         <Container fluid className="flex-grow-1 py-4 px-5">
           <Alert variant="danger">Error: {error}</Alert>
           <Button onClick={() => navigate(-1)}>Back</Button>
@@ -153,9 +164,15 @@ function PersonDetail() {
     );
   }
 
+  const breadcrumbs = [
+    { label: "Browse", path: "/" },
+    ...(location.state?.from ? [location.state.from] : []),
+    { label: person?.primaryName || person?.name || "Person", active: true },
+  ];
+
   return (
     <div className="d-flex flex-column min-vh-100">
-      <Navbar pageName="Person Details" />
+      <Navbar breadcrumbs={breadcrumbs} />
       <Container fluid className="flex-grow-1 py-4 px-5">
         <Button
           variant="secondary"

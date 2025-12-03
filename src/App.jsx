@@ -85,9 +85,11 @@ function App() {
       });
   }, [page, pageSize]);
 
+  const breadcrumbs = [{ label: "Browse", path: "/", active: true }];
+
   return (
     <div className="d-flex flex-column min-vh-100">
-      <Navbar pageName="Browse Page" />
+      <Navbar breadcrumbs={breadcrumbs} />
 
       <Container fluid className="flex-grow-1 py-4 px-5">
         <div className="d-flex align-items-end gap-4 mb-4">
