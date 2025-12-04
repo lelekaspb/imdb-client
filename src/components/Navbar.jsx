@@ -12,6 +12,15 @@ import { PersonCircle } from "react-bootstrap-icons";
 function Navbar({ breadcrumbs }) {
   const navigate = useNavigate();
 
+  const handleUserIconClick = () => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      navigate("/user");
+    } else {
+      navigate("/user/login");
+    }
+  };
+
   return (
     <>
       <BsNavbar bg="dark" variant="dark" className="mb-0">
@@ -45,7 +54,7 @@ function Navbar({ breadcrumbs }) {
           </Form>
 
           <Nav>
-            <Nav.Link>
+            <Nav.Link onClick={handleUserIconClick}>
               <PersonCircle size={28} />
             </Nav.Link>
           </Nav>

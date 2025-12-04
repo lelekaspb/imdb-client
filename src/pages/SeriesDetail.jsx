@@ -10,6 +10,7 @@ import {
   Button,
   ListGroup,
 } from "react-bootstrap";
+import { BookmarkPlus, BookmarkCheckFill } from "react-bootstrap-icons";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -20,7 +21,59 @@ function SeriesDetail() {
   const [cast, setCast] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
   const apiKey = "e4f70d8185101e89d6853659d9cfd53b";
+
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    setIsLoggedIn(!!token);
+  }, []);
+
+  const handleAddToWatchlist = async () => {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      navigate("/user/login");
+      return;
+    }
+
+    const userData = localStorage.getItem("user");
+    let userId = 0;
+
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        userId = user.id || user.userId || 0;
+      } catch (e) {
+        console.error("Failed to parse user data:", e);
+      }
+    }
+
+    try {
+      const response = await fetch("http://localhost:5079/api/Bookmarks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: userId,
+          tconst: id,
+          nconst: null,
+        }),
+      });
+
+      if (response.ok) {
+        setIsInWatchlist(true);
+      } else {
+        const errorData = await response.json();
+        console.error("Failed to add bookmark:", errorData);
+      }
+    } catch (err) {
+      console.error("Failed to add to watchlist:", err);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -211,7 +264,29 @@ function SeriesDetail() {
             </div>
           </Col>
           <Col md={8}>
-            <h1>{series.title || series.primaryTitle}</h1>
+            <div className="d-flex align-items-center mb-3">
+              <h1 className="mb-0">{series.title || series.primaryTitle}</h1>
+              {isLoggedIn && (
+                <Button
+                  variant={isInWatchlist ? "success" : "outline-primary"}
+                  className="ms-3"
+                  onClick={handleAddToWatchlist}
+                  disabled={isInWatchlist}
+                >
+                  {isInWatchlist ? (
+                    <>
+                      <BookmarkCheckFill className="me-2" />
+                      In Watchlist
+                    </>
+                  ) : (
+                    <>
+                      <BookmarkPlus className="me-2" />
+                      Add to Watchlist
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
             <Card className="mt-3">
               <Card.Body>
                 <h5>Series Information</h5>

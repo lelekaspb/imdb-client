@@ -8,7 +8,7 @@ function Footer() {
           Study Portfolio Project - Group 2 - Using IMDb data - RUC, Autumn 2025
         </p>
         <p className="mb-0 text-white-50 small">
-          &copy; {new Date().getFullYear()} IMDb Clone. All rights reserved.
+          &copy; {new Date().getFullYear()} IMDb Clone
         </p>
       </Container>
     </footer>

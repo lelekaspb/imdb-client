@@ -10,6 +10,7 @@ import {
   Button,
   ListGroup,
 } from "react-bootstrap";
+import { BookmarkPlus, BookmarkCheckFill } from "react-bootstrap-icons";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -20,7 +21,59 @@ function MovieDetail() {
   const [cast, setCast] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
   const apiKey = "e4f70d8185101e89d6853659d9cfd53b";
+
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    setIsLoggedIn(!!token);
+  }, []);
+
+  const handleAddToWatchlist = async () => {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      navigate("/user/login");
+      return;
+    }
+
+    const userData = localStorage.getItem("user");
+    let userId = 0;
+
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        userId = user.id || user.userId || 0;
+      } catch (e) {
+        console.error("Failed to parse user data:", e);
+      }
+    }
+
+    try {
+      const response = await fetch("http://localhost:5079/api/Bookmarks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: userId,
+          tconst: id,
+          nconst: null,
+        }),
+      });
+
+      if (response.ok) {
+        setIsInWatchlist(true);
+      } else {
+        const errorData = await response.json();
+        console.error("Failed to add bookmark:", errorData);
+      }
+    } catch (err) {
+      console.error("Failed to add to watchlist:", err);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -211,17 +264,39 @@ function MovieDetail() {
             </div>
           </Col>
           <Col md={8}>
-            <h1>
-              {movie.title || movie.primaryTitle}
-              {movie.startYear && (
-                <span
-                  className="text-muted"
-                  style={{ fontSize: "1.5rem", marginLeft: "0.5rem" }}
+            <div className="d-flex align-items-center mb-2">
+              <h1 className="mb-0">
+                {movie.title || movie.primaryTitle}
+                {movie.startYear && (
+                  <span
+                    className="text-muted"
+                    style={{ fontSize: "1.5rem", marginLeft: "0.5rem" }}
+                  >
+                    ({movie.startYear})
+                  </span>
+                )}
+              </h1>
+              {isLoggedIn && (
+                <Button
+                  variant={isInWatchlist ? "success" : "outline-primary"}
+                  className="ms-3"
+                  onClick={handleAddToWatchlist}
+                  disabled={isInWatchlist}
                 >
-                  ({movie.startYear})
-                </span>
+                  {isInWatchlist ? (
+                    <>
+                      <BookmarkCheckFill className="me-2" />
+                      In Watchlist
+                    </>
+                  ) : (
+                    <>
+                      <BookmarkPlus className="me-2" />
+                      Add to Watchlist
+                    </>
+                  )}
+                </Button>
               )}
-            </h1>
+            </div>
             {movie.runtimeMinutes && (
               <p className="text-muted mb-3">
                 Runtime: {movie.runtimeMinutes} minutes
