@@ -450,23 +450,49 @@ function PersonDetail() {
                           item.titleType === "tvSeries" ||
                           item.titleType === "tvMiniSeries" ||
                           item.titleType === "tvEpisode";
-                        navigate(
-                          `/${isSeries ? "series" : "movie"}/${item.tconst}`
-                        );
+                        const path = `/${isSeries ? "series" : "movie"}/${
+                          item.tconst
+                        }`;
+                        navigate(path, {
+                          state: {
+                            from: {
+                              label:
+                                person?.primaryName || person?.name || "Person",
+                              path: `/person/${id}`,
+                            },
+                            ...(isSeries
+                              ? { seriesTitle: item.title || item.primaryTitle }
+                              : {
+                                  movieTitle: item.title || item.primaryTitle,
+                                }),
+                          },
+                        });
                       }}
                       style={{ cursor: "pointer" }}
                     >
-                      <div
-                        style={{
-                          backgroundColor: "#e0e0e0",
-                          height: "180px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <span className="text-muted">No Poster</span>
-                      </div>
+                      {item.posterUrl ? (
+                        <Card.Img
+                          variant="top"
+                          src={item.posterUrl}
+                          alt={item.title || item.primaryTitle}
+                          style={{
+                            height: "180px",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            backgroundColor: "#e0e0e0",
+                            height: "180px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <span className="text-muted">No Poster</span>
+                        </div>
+                      )}
                       <Card.Body className="p-2">
                         <Card.Title
                           style={{
@@ -480,27 +506,17 @@ function PersonDetail() {
                           style={{ fontSize: "0.8rem" }}
                           className="text-muted mb-0"
                         >
-                          {item.startYear && (
+                          {item.startYear && <div>{item.startYear}</div>}
+                          {item.jobs && item.jobs.length > 0 && (
                             <div>
-                              {item.endYear
-                                ? `${item.startYear} - ${item.endYear}`
-                                : item.startYear}
+                              <strong>Job:</strong> {item.jobs.join(", ")}
                             </div>
                           )}
-                          {item.job && (
-                            <div>
-                              <strong>Job:</strong> {item.job}
-                            </div>
-                          )}
-                          {item.characterName && (
+                          {item.characters && item.characters.length > 0 && (
                             <div>
                               <strong>Character:</strong>{" "}
-                              {item.characterName
-                                .replace(/^\[|\]$/g, "")
-                                .replace(/'/g, "")
-                                .split(",")
-                                .map((char) => char.trim())
-                                .filter((char) => char)
+                              {item.characters
+                                .filter((char) => char && char.trim())
                                 .join(", ")}
                             </div>
                           )}

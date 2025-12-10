@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { authFetch } from "../utils/authFetch";
 import {
   Container,
@@ -18,6 +18,7 @@ import Footer from "../components/Footer";
 function MovieDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [movie, setMovie] = useState(null);
   const [cast, setCast] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -146,6 +147,13 @@ function MovieDetail() {
         return Promise.all([moviePromise, castPromise]);
       })
       .then(([movieData, castData]) => {
+        // Redirect to episode page if this is an episode (has parentSeriesId)
+        if (movieData.parentSeriesId) {
+          setLoading(false);
+          navigate(`/episode/${id}`, { replace: true });
+          return null;
+        }
+
         setMovie(movieData);
         const rawCast = Array.isArray(castData)
           ? castData
@@ -182,19 +190,11 @@ function MovieDetail() {
           }
         });
 
-        // Convert to array and process character names
+        // Convert to array and join character names
         const consolidatedCast = Array.from(castMap.values()).map((member) => ({
           ...member,
           allCharacters: member.characterNames
-            .map((char) =>
-              char
-                .replace(/^\[|\]$/g, "")
-                .replace(/'/g, "")
-                .split(",")
-                .map((c) => c.trim())
-                .filter((c) => c)
-            )
-            .flat()
+            .filter((char) => char && char.trim())
             .filter((char, idx, arr) => arr.indexOf(char) === idx) // Remove duplicates
             .join(", "),
           allJobs: Array.from(member.jobs).join(", "),
@@ -223,6 +223,7 @@ function MovieDetail() {
         return Promise.all(photoPromises);
       })
       .then((castWithPhotos) => {
+        if (castWithPhotos === null) return; // Skip if we redirected
         setCast(castWithPhotos);
         setLoading(false);
       })
@@ -234,7 +235,11 @@ function MovieDetail() {
 
   const breadcrumbs = [
     { label: "Browse", path: "/" },
-    { label: movie?.primaryTitle || movie?.title || "Movie", active: true },
+    ...(location.state?.from ? [location.state.from] : []),
+    {
+      label: location.state?.movieTitle || movie?.movieTitle || "Movie",
+      active: true,
+    },
   ];
 
   if (loading) {
@@ -276,6 +281,11 @@ function MovieDetail() {
     );
   }
 
+  // Don't render if movie is null (redirecting to episode page)
+  if (!movie) {
+    return null;
+  }
+
   return (
     <div className="d-flex flex-column min-vh-100">
       <Navbar breadcrumbs={breadcrumbs} />
@@ -290,22 +300,34 @@ function MovieDetail() {
 
         <Row>
           <Col md={4}>
-            <div
-              style={{
-                backgroundColor: "#e0e0e0",
-                height: "500px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span className="text-muted">No Poster</span>
-            </div>
+            {movie.posterUrl ? (
+              <img
+                src={movie.posterUrl}
+                alt={movie.title || movie.primaryTitle}
+                style={{
+                  width: "100%",
+                  maxHeight: "500px",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  backgroundColor: "#e0e0e0",
+                  height: "500px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span className="text-muted">No Poster</span>
+              </div>
+            )}
           </Col>
           <Col md={8}>
             <div className="d-flex align-items-center mb-2">
               <h1 className="mb-0">
-                {movie.title || movie.primaryTitle}
+                {movie.movieTitle}
                 {movie.startYear && (
                   <span
                     className="text-muted"
@@ -349,21 +371,30 @@ function MovieDetail() {
             )}
             <Card className="mt-3">
               <Card.Body>
-                <h5>Movie Information</h5>
-                <p>
-                  <strong>Type:</strong> Movie
-                </p>
-                <p>
-                  <strong>ID:</strong> {movie.id || movie.tconst}
-                </p>
-                {movie.releaseYear && (
+                {movie.ratedAge && (
                   <p>
-                    <strong>Release Year:</strong> {movie.releaseYear}
+                    <strong>Rated:</strong> {movie.ratedAge}
                   </p>
                 )}
-                {movie.runtime && (
+                {movie.releaseDate && (
                   <p>
-                    <strong>Runtime:</strong> {movie.runtime} minutes
+                    <strong>Release Date:</strong>{" "}
+                    {new Date(movie.releaseDate).toLocaleDateString()}
+                  </p>
+                )}
+                {movie.runtimeMinutes && (
+                  <p>
+                    <strong>Runtime:</strong> {movie.runtimeMinutes} minutes
+                  </p>
+                )}
+                {movie.language && (
+                  <p>
+                    <strong>Language:</strong> {movie.language}
+                  </p>
+                )}
+                {movie.country && (
+                  <p>
+                    <strong>Country:</strong> {movie.country}
                   </p>
                 )}
                 {movie.genres && (
@@ -371,9 +402,9 @@ function MovieDetail() {
                     <strong>Genres:</strong> {movie.genres}
                   </p>
                 )}
-                {movie.rating && (
+                {movie.writerNames && (
                   <p>
-                    <strong>Rating:</strong> {movie.rating}/10
+                    <strong>Writers:</strong> {movie.writerNames}
                   </p>
                 )}
                 {movie.plot && (
@@ -400,7 +431,11 @@ function MovieDetail() {
                         navigate(`/person/${member.nconst}`, {
                           state: {
                             from: {
-                              label: movie?.primaryTitle || movie?.title,
+                              label:
+                                location.state?.movieTitle ||
+                                movie?.primaryTitle ||
+                                movie?.title ||
+                                "Movie",
                               path: `/movie/${id}`,
                             },
                           },

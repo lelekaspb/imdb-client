@@ -66,7 +66,6 @@ function App() {
         return response.json();
       })
       .then((data) => {
-        console.log("API Response:", data);
         // Handle if data is an object with an array property or directly an array
         const moviesArray = Array.isArray(data)
           ? data
@@ -182,7 +181,6 @@ function App() {
 
                   // Log first item to see structure
                   if (movies.indexOf(movie) === 0) {
-                    console.log("First movie object:", movie);
                   }
 
                   return (
@@ -190,26 +188,45 @@ function App() {
                       <Card
                         className="h-100"
                         style={{ cursor: "pointer" }}
-                        onClick={() =>
-                          navigate(
-                            isSeries ? `/series/${itemId}` : `/movie/${itemId}`
-                          )
-                        }
+                        onClick={() => {
+                          const path = isSeries
+                            ? `/series/${itemId}`
+                            : `/movie/${itemId}`;
+                          navigate(path, {
+                            state: isSeries
+                              ? { seriesTitle: movie.seriesTitle }
+                              : { movieTitle: movie.movieTitle },
+                          });
+                        }}
                       >
-                        <div
-                          style={{
-                            backgroundColor: "#e0e0e0",
-                            height: "300px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <span className="text-muted">No Poster</span>
-                        </div>
+                        {movie.posterUrl ? (
+                          <Card.Img
+                            variant="top"
+                            src={movie.posterUrl}
+                            alt={
+                              isSeries ? movie.seriesTitle : movie.movieTitle
+                            }
+                            style={{
+                              height: "300px",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              backgroundColor: "#e0e0e0",
+                              height: "300px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <span className="text-muted">No Poster</span>
+                          </div>
+                        )}
                         <Card.Body>
                           <Card.Title style={{ fontSize: "1rem" }}>
-                            {movie.title || movie.primaryTitle}
+                            {isSeries ? movie.seriesTitle : movie.movieTitle}
                           </Card.Title>
                           <Card.Text className="text-muted small">
                             {typeLabel}

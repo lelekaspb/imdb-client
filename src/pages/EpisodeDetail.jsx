@@ -124,7 +124,9 @@ function EpisodeDetail() {
           return episodeRes
             .json()
             .then((data) => {
-              throw new Error(data.message || "Failed to fetch episode details");
+              throw new Error(
+                data.message || "Failed to fetch episode details"
+              );
             })
             .catch(() => {
               throw new Error("Failed to fetch episode details");
@@ -140,8 +142,10 @@ function EpisodeDetail() {
         setEpisode(episodeData);
 
         // Process cast data with TMDB photos
-        const castArray = Array.isArray(castData) ? castData : castData.cast || [];
-        
+        const castArray = Array.isArray(castData)
+          ? castData
+          : castData.cast || [];
+
         // Consolidate cast by nconst to avoid duplicates
         const castMap = new Map();
         castArray.forEach((member) => {
@@ -153,7 +157,10 @@ function EpisodeDetail() {
             });
           } else {
             const existing = castMap.get(member.nconst);
-            if (member.characterName && !existing.characters.includes(member.characterName)) {
+            if (
+              member.characterName &&
+              !existing.characters.includes(member.characterName)
+            ) {
               existing.characters.push(member.characterName);
             }
             if (member.job && !existing.jobs.includes(member.job)) {
@@ -198,10 +205,31 @@ function EpisodeDetail() {
       });
   }, [id, apiKey]);
 
+  const breadcrumbs = [
+    { label: "Browse", path: "/" },
+    ...(episode?.parentSeriesId && episode?.parentSeriesTitle
+      ? [
+          {
+            label: episode.parentSeriesTitle,
+            path: `/series/${episode.parentSeriesId}`,
+          },
+        ]
+      : []),
+    {
+      label: episode?.episodeTitle || "Episode",
+      active: true,
+    },
+  ];
+
   if (loading) {
     return (
       <div className="d-flex flex-column min-vh-100">
-        <Navbar />
+        <Navbar
+          breadcrumbs={[
+            { label: "Browse", path: "/" },
+            { label: "Episode", active: true },
+          ]}
+        />
         <Container fluid className="flex-grow-1 py-4 px-5">
           <div className="text-center py-5">
             <Spinner animation="border" role="status">
@@ -217,7 +245,12 @@ function EpisodeDetail() {
   if (error) {
     return (
       <div className="d-flex flex-column min-vh-100">
-        <Navbar />
+        <Navbar
+          breadcrumbs={[
+            { label: "Browse", path: "/" },
+            { label: "Episode", active: true },
+          ]}
+        />
         <Container fluid className="flex-grow-1 py-4 px-5">
           <Alert variant="danger">Error: {error}</Alert>
           <Button onClick={() => navigate(-1)}>Back</Button>
@@ -229,7 +262,7 @@ function EpisodeDetail() {
 
   return (
     <div className="d-flex flex-column min-vh-100">
-      <Navbar />
+      <Navbar breadcrumbs={breadcrumbs} />
       <Container fluid className="flex-grow-1 py-4 px-5">
         <Button
           variant="secondary"
@@ -241,27 +274,56 @@ function EpisodeDetail() {
 
         <Row>
           <Col md={3}>
-            <div
-              style={{
-                backgroundColor: "#e0e0e0",
-                height: "450px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span className="text-muted">No Poster</span>
-            </div>
+            {episode.posterUrl ? (
+              <img
+                src={episode.posterUrl}
+                alt={episode.title || episode.primaryTitle}
+                style={{
+                  width: "100%",
+                  maxHeight: "450px",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  backgroundColor: "#e0e0e0",
+                  height: "450px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span className="text-muted">No Poster</span>
+              </div>
+            )}
           </Col>
           <Col md={9}>
             <div className="d-flex justify-content-between align-items-start mb-3">
               <div>
-                <h1>{episode.title || episode.primaryTitle}</h1>
-                {episode.startYear && (
-                  <p className="text-muted mb-0" style={{ fontSize: "1.2rem" }}>
-                    ({episode.startYear})
-                  </p>
+                {episode.parentSeriesTitle && (
+                  <h5 className="text-muted mb-2">
+                    {episode.parentSeriesTitle}
+                  </h5>
                 )}
+                <h1>{episode.episodeTitle}</h1>
+                <p className="text-muted mb-0" style={{ fontSize: "1.1rem" }}>
+                  {episode.seasonNumber && episode.episodeNumber && (
+                    <span>
+                      Season {episode.seasonNumber}, Episode{" "}
+                      {episode.episodeNumber}
+                    </span>
+                  )}
+                  {episode.releaseDate && (
+                    <span>
+                      {episode.seasonNumber && episode.episodeNumber
+                        ? " • "
+                        : ""}
+                      Air Date:{" "}
+                      {new Date(episode.releaseDate).toLocaleDateString()}
+                    </span>
+                  )}
+                </p>
               </div>
               {isLoggedIn && (
                 <Button
@@ -291,32 +353,28 @@ function EpisodeDetail() {
             <Card className="mt-3">
               <Card.Body>
                 <h5>Episode Information</h5>
-                <p>
-                  <strong>ID:</strong> {episode.tconst}
-                </p>
-                {episode.titleType && (
+                {episode.parentSeriesTitle && (
                   <p>
-                    <strong>Type:</strong> {episode.titleType}
-                  </p>
-                )}
-                {episode.isAdult !== undefined && (
-                  <p>
-                    <strong>Adult Content:</strong> {episode.isAdult ? "Yes" : "No"}
-                  </p>
-                )}
-                {episode.runtimeMinutes && (
-                  <p>
-                    <strong>Runtime:</strong> {episode.runtimeMinutes} minutes
-                  </p>
-                )}
-                {episode.genres && (
-                  <p>
-                    <strong>Genres:</strong> {episode.genres}
-                  </p>
-                )}
-                {episode.parentTconst && (
-                  <p>
-                    <strong>Series ID:</strong> {episode.parentTconst}
+                    <strong>Series:</strong> {episode.parentSeriesTitle}
+                    {episode.parentSeriesId && (
+                      <span
+                        className="text-primary"
+                        style={{ cursor: "pointer", marginLeft: "0.5rem" }}
+                        onClick={() =>
+                          navigate(`/series/${episode.parentSeriesId}`, {
+                            state: {
+                              from: {
+                                label: episode.episodeTitle || "Episode",
+                                path: `/episode/${episode.tconst}`,
+                              },
+                              seriesTitle: episode.parentSeriesTitle,
+                            },
+                          })
+                        }
+                      >
+                        (View Series)
+                      </span>
+                    )}
                   </p>
                 )}
                 {episode.seasonNumber && (
@@ -328,6 +386,28 @@ function EpisodeDetail() {
                   <p>
                     <strong>Episode:</strong> {episode.episodeNumber}
                   </p>
+                )}
+                {episode.releaseDate && (
+                  <p>
+                    <strong>Air Date:</strong>{" "}
+                    {new Date(episode.releaseDate).toLocaleDateString()}
+                  </p>
+                )}
+                {episode.runtimeMinutes && (
+                  <p>
+                    <strong>Runtime:</strong> {episode.runtimeMinutes} minutes
+                  </p>
+                )}
+                {episode.writerNames && (
+                  <p>
+                    <strong>Writers:</strong> {episode.writerNames}
+                  </p>
+                )}
+                {episode.plot && (
+                  <>
+                    <h5 className="mt-4">Plot</h5>
+                    <p>{episode.plot}</p>
+                  </>
                 )}
               </Card.Body>
             </Card>
@@ -347,7 +427,7 @@ function EpisodeDetail() {
                         navigate(`/person/${member.nconst}`, {
                           state: {
                             from: {
-                              label: episode.title || episode.primaryTitle,
+                              label: episode.episodeTitle || "Episode",
                               path: `/episode/${id}`,
                             },
                           },
@@ -395,10 +475,7 @@ function EpisodeDetail() {
                             <div>
                               <strong>Character:</strong>{" "}
                               {member.characters
-                                .map((char) => {
-                                  const match = char.match(/\["(.+?)"\]/);
-                                  return match ? match[1] : char;
-                                })
+                                .filter((char) => char && char.trim())
                                 .join(", ")}
                             </div>
                           )}

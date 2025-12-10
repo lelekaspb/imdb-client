@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { authFetch } from "../utils/authFetch";
 import {
   Container,
@@ -18,6 +18,7 @@ import Footer from "../components/Footer";
 function SeriesDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [series, setSeries] = useState(null);
   const [cast, setCast] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -146,6 +147,13 @@ function SeriesDetail() {
         return Promise.all([seriesPromise, castPromise]);
       })
       .then(([seriesData, castData]) => {
+        // Redirect to episode page if this is an episode (has parentSeriesId)
+        if (seriesData.parentSeriesId) {
+          setLoading(false);
+          navigate(`/episode/${id}`, { replace: true });
+          return null;
+        }
+
         setSeries(seriesData);
         const rawCast = Array.isArray(castData)
           ? castData
@@ -182,19 +190,11 @@ function SeriesDetail() {
           }
         });
 
-        // Convert to array and process character names
+        // Convert to array and join character names
         const consolidatedCast = Array.from(castMap.values()).map((member) => ({
           ...member,
           allCharacters: member.characterNames
-            .map((char) =>
-              char
-                .replace(/^\[|\]$/g, "")
-                .replace(/'/g, "")
-                .split(",")
-                .map((c) => c.trim())
-                .filter((c) => c)
-            )
-            .flat()
+            .filter((char) => char && char.trim())
             .filter((char, idx, arr) => arr.indexOf(char) === idx) // Remove duplicates
             .join(", "),
           allJobs: Array.from(member.jobs).join(", "),
@@ -223,6 +223,7 @@ function SeriesDetail() {
         return Promise.all(photoPromises);
       })
       .then((castWithPhotos) => {
+        if (castWithPhotos === null) return; // Skip if we redirected
         setCast(castWithPhotos);
         setLoading(false);
       })
@@ -271,9 +272,18 @@ function SeriesDetail() {
     );
   }
 
+  // Don't render if series is null (redirecting to episode page)
+  if (!series) {
+    return null;
+  }
+
   const breadcrumbs = [
     { label: "Browse", path: "/" },
-    { label: series?.primaryTitle || series?.title || "Series", active: true },
+    ...(location.state?.from ? [location.state.from] : []),
+    {
+      label: location.state?.seriesTitle || series?.seriesTitle || "Series",
+      active: true,
+    },
   ];
 
   return (
@@ -290,21 +300,33 @@ function SeriesDetail() {
 
         <Row>
           <Col md={4}>
-            <div
-              style={{
-                backgroundColor: "#e0e0e0",
-                height: "500px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span className="text-muted">No Poster</span>
-            </div>
+            {series.posterUrl ? (
+              <img
+                src={series.posterUrl}
+                alt={series.title || series.primaryTitle}
+                style={{
+                  width: "100%",
+                  maxHeight: "500px",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  backgroundColor: "#e0e0e0",
+                  height: "500px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span className="text-muted">No Poster</span>
+              </div>
+            )}
           </Col>
           <Col md={8}>
             <div className="d-flex align-items-center mb-3">
-              <h1 className="mb-0">{series.title || series.primaryTitle}</h1>
+              <h1 className="mb-0">{series.seriesTitle}</h1>
               {isLoggedIn && (
                 <Button
                   variant={isInWatchlist ? "success" : "outline-primary"}
@@ -332,20 +354,36 @@ function SeriesDetail() {
             <Card className="mt-3">
               <Card.Body>
                 <h5>Series Information</h5>
-                <p>
-                  <strong>Type:</strong> Series
-                </p>
-                <p>
-                  <strong>ID:</strong> {series.id || series.tconst}
-                </p>
+                {series.numberOfSeasons && (
+                  <p>
+                    <strong>Number of Seasons:</strong> {series.numberOfSeasons}
+                  </p>
+                )}
+                {series.ratedAge && (
+                  <p>
+                    <strong>Rated:</strong> {series.ratedAge}
+                  </p>
+                )}
+                {series.releaseDate && (
+                  <p>
+                    <strong>Release Date:</strong>{" "}
+                    {new Date(series.releaseDate).toLocaleDateString()}
+                  </p>
+                )}
                 {series.startYear && (
                   <p>
                     <strong>Start Year:</strong> {series.startYear}
+                    {series.endYear && ` - ${series.endYear}`}
                   </p>
                 )}
-                {series.endYear && (
+                {series.language && (
                   <p>
-                    <strong>End Year:</strong> {series.endYear}
+                    <strong>Language:</strong> {series.language}
+                  </p>
+                )}
+                {series.country && (
+                  <p>
+                    <strong>Country:</strong> {series.country}
                   </p>
                 )}
                 {series.genres && (
@@ -353,9 +391,9 @@ function SeriesDetail() {
                     <strong>Genres:</strong> {series.genres}
                   </p>
                 )}
-                {series.rating && (
+                {series.writerNames && (
                   <p>
-                    <strong>Rating:</strong> {series.rating}/10
+                    <strong>Writers:</strong> {series.writerNames}
                   </p>
                 )}
                 {series.plot && (
@@ -366,21 +404,6 @@ function SeriesDetail() {
                 )}
               </Card.Body>
             </Card>
-
-            {series.seasons && (
-              <Card className="mt-3">
-                <Card.Body>
-                  <h5>Seasons</h5>
-                  <ListGroup variant="flush">
-                    {series.seasons.map((season) => (
-                      <ListGroup.Item key={season.id}>
-                        Season {season.number} - {season.episodeCount} episodes
-                      </ListGroup.Item>
-                    ))}
-                  </ListGroup>
-                </Card.Body>
-              </Card>
-            )}
           </Col>
         </Row>
 
@@ -397,7 +420,10 @@ function SeriesDetail() {
                         navigate(`/person/${member.nconst}`, {
                           state: {
                             from: {
-                              label: series?.primaryTitle || series?.title,
+                              label:
+                                location.state?.seriesTitle ||
+                                series?.seriesTitle ||
+                                "Series",
                               path: `/series/${id}`,
                             },
                           },
