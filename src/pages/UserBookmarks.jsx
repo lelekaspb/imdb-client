@@ -59,7 +59,7 @@ function UserBookmarks() {
         // Fetch photos for person bookmarks
         const personsWithPhotos = await Promise.all(
           persons.map(async (person) => {
-            const photoUrl = await fetchPersonPhoto(person.title);
+            const photoUrl = await fetchPersonPhoto(person.personName);
             return { ...person, photoUrl };
           })
         );
@@ -122,15 +122,13 @@ function UserBookmarks() {
             label: "My Bookmarks",
             path: "/user/bookmarks",
           },
-          ...(isSeries && !isEpisode
-            ? { seriesTitle: bookmark.title || bookmark.primaryTitle }
+          ...(bookmark.seriesTitle
+            ? { seriesTitle: bookmark.seriesTitle }
             : {}),
-          ...(isEpisode
-            ? { episodeTitle: bookmark.title || bookmark.primaryTitle }
+          ...(bookmark.episodeTitle
+            ? { episodeTitle: bookmark.episodeTitle }
             : {}),
-          ...(!isSeries && !isEpisode
-            ? { movieTitle: bookmark.title || bookmark.primaryTitle }
-            : {}),
+          ...(bookmark.movieTitle ? { movieTitle: bookmark.movieTitle } : {}),
           userBookmark: {
             bookmarkId: bookmark.bookmarkId,
             note: bookmark.note,
@@ -220,8 +218,9 @@ function UserBookmarks() {
                         }}
                         onClick={() => handleNavigate(bookmark)}
                       >
-                        {bookmark.title ||
-                          bookmark.primaryTitle ||
+                        {bookmark.movieTitle ||
+                          bookmark.seriesTitle ||
+                          bookmark.episodeTitle ||
                           "Unknown Title"}
                       </Card.Title>
                       <Button
@@ -290,10 +289,7 @@ function UserBookmarks() {
                         }}
                         onClick={() => handleNavigate(bookmark)}
                       >
-                        {bookmark.title ||
-                          bookmark.name ||
-                          bookmark.primaryName ||
-                          "Unknown Person"}
+                        {bookmark.personName || "Unknown Person"}
                       </Card.Title>
                       <Button
                         variant="danger"

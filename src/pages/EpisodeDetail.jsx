@@ -220,7 +220,9 @@ function EpisodeDetail() {
 
   const breadcrumbs = [
     { label: "Browse", path: "/" },
-    ...(episode?.parentSeriesId && episode?.parentSeriesTitle
+    ...(location.state?.from
+      ? [location.state.from]
+      : episode?.parentSeriesId && episode?.parentSeriesTitle
       ? [
           {
             label: episode.parentSeriesTitle,

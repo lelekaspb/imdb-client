@@ -152,7 +152,10 @@ function MovieDetail() {
         // Redirect to episode page if this is an episode (has parentSeriesId)
         if (movieData.parentSeriesId) {
           setLoading(false);
-          navigate(`/episode/${id}`, { replace: true });
+          navigate(`/episode/${id}`, {
+            replace: true,
+            state: location.state, // Preserve navigation state during redirect
+          });
           return null;
         }
 
@@ -250,11 +253,7 @@ function MovieDetail() {
     { label: "Browse", path: "/" },
     ...(location.state?.from ? [location.state.from] : []),
     {
-      label:
-        location.state?.movieTitle ||
-        movie?.movieTitle ||
-        movie?.primaryTitle ||
-        "Title",
+      label: location.state?.movieTitle || movie?.movieTitle || "Movie",
       active: true,
     },
   ];
