@@ -23,5 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# Ignore all env files
+*.env
+
+# But allow example template
+!.env.example
 
 notes.txt

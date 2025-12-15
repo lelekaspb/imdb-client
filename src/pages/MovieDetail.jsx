@@ -1,741 +1,163 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { authFetch } from "../utils/authFetch";
 import {
   Container,
-  Row,
-  Col,
   Card,
   Spinner,
   Alert,
-  Button,
-  ListGroup,
-  Form,
+  Badge,
 } from "react-bootstrap";
-import {
-  BookmarkPlus,
-  BookmarkCheckFill,
-  StarFill,
-  Star,
-} from "react-bootstrap-icons";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import MyActivityPanel from "../components/user/MyActivityPanel";
 
-function MovieDetail() {
+import useMovie from "../hooks/useMovie";
+import useCast from "../hooks/useCast";
+import useBookmarks from "../hooks/useBookmarks";
+import useRating from "../hooks/useRating";
+import { normalizeList } from "../utils/normalizeList";
+
+import PersonCard from "../components/people/PersonCard";
+import Breadcrumbs from "../components/navigation/Breadcrumbs";
+import DetailLayout from "../components/layout/DetailLayout";
+import InfoCard from "../components/common/InfoCard";
+import SmartImage from "../components/common/SmartImage";
+
+export default function MovieDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [movie, setMovie] = useState(null);
+
+  const { movie, loading, error } = useMovie(id);
+  const rawCast = useCast(id, "movie");
   const [cast, setCast] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isInWatchlist, setIsInWatchlist] = useState(false);
-  const [bookmarkId, setBookmarkId] = useState(null);
-  const [userNote, setUserNote] = useState(null);
-  const [userRating, setUserRating] = useState(null);
-  const [imdbRating, setImdbRating] = useState(null);
-  const [imdbVotes, setImdbVotes] = useState(null);
-  const [myRating, setMyRating] = useState(null);
-  const [myRatingId, setMyRatingId] = useState(null);
-  const [showRatingInput, setShowRatingInput] = useState(false);
-  const [ratingValue, setRatingValue] = useState("");
-  const apiKey = "e4f70d8185101e89d6853659d9cfd53b";
+
+  const { isLoggedIn, isBookmarked, addBookmark, removeBookmark } =
+    useBookmarks({ tconst: id });
+
+  const { rating, saveRating } = useRating(id);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    setIsLoggedIn(!!token);
-  }, []);
-
-  const handleAddToWatchlist = async () => {
-    const token = localStorage.getItem("authToken");
-
-    if (!token) {
-      navigate("/user/login");
-      return;
-    }
-
-    const userData = localStorage.getItem("user");
-    let userId = 0;
-
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        userId = user.id || user.userId || 0;
-      } catch (e) {
-        console.error("Failed to parse user data:", e);
-      }
-    }
-
-    try {
-      const response = await authFetch("http://localhost:5079/api/Bookmarks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: userId,
-          tconst: id,
-          nconst: null,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setIsInWatchlist(true);
-        setBookmarkId(data.id || data.bookmarkId);
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to add bookmark:", errorData);
-      }
-    } catch (err) {
-      console.error("Failed to add to watchlist:", err);
-    }
-  };
-
-  const handleRemoveFromWatchlist = async () => {
-    const token = localStorage.getItem("authToken");
-
-    if (!token) {
-      navigate("/user/login");
-      return;
-    }
-
-    if (!bookmarkId) {
-      console.error("No bookmark ID available");
-      return;
-    }
-
-    try {
-      const response = await authFetch(
-        `http://localhost:5079/api/Bookmarks/${bookmarkId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.ok) {
-        setIsInWatchlist(false);
-        setBookmarkId(null);
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to remove bookmark:", errorData);
-      }
-    } catch (err) {
-      console.error("Failed to remove from watchlist:", err);
-    }
-  };
-
-  useEffect(() => {
-    setLoading(true);
-
-    // Fetch both movie details and cast in parallel
-    Promise.all([
-      authFetch(`http://localhost:5079/api/Movies/${id}`),
-      authFetch(`http://localhost:5079/api/Movies/${id}/cast`),
-    ])
-      .then(([movieRes, castRes]) => {
-        if (!movieRes.ok) {
-          return movieRes
-            .json()
-            .then((data) => {
-              throw new Error(data.message || "Failed to fetch movie details");
-            })
-            .catch((err) => {
-              if (
-                err.message &&
-                err.message !== "Failed to fetch movie details"
-              ) {
-                throw err;
-              }
-              throw new Error("Failed to fetch movie details");
-            });
-        }
-
-        const moviePromise = movieRes.json();
-        const castPromise = castRes.ok ? castRes.json() : Promise.resolve([]);
-
-        return Promise.all([moviePromise, castPromise]);
-      })
-      .then(([movieData, castData]) => {
-        // Redirect to episode page if this is an episode (has parentSeriesId)
-        if (movieData.parentSeriesId) {
-          setLoading(false);
-          navigate(`/episode/${id}`, {
-            replace: true,
-            state: location.state, // Preserve navigation state during redirect
-          });
-          return null;
-        }
-
-        setMovie(movieData);
-
-        // Extract IMDb rating data
-        if (movieData.imdbAverageRating) {
-          setImdbRating(movieData.imdbAverageRating);
-        }
-        if (movieData.imdbNumVotes) {
-          setImdbVotes(movieData.imdbNumVotes);
-        }
-
-        // Always use userBookmark from API response
-        const bookmarkData = movieData.userBookmark;
-        if (bookmarkData) {
-          const isBookmarked =
-            bookmarkData.isBookmarked && bookmarkData.bookmarkId !== null;
-          setIsInWatchlist(isBookmarked);
-          setBookmarkId(bookmarkData.bookmarkId);
-          setUserNote(bookmarkData.note);
-          setUserRating(bookmarkData.rating);
-          if (bookmarkData.hasOwnProperty("rating")) {
-            setMyRating(bookmarkData.rating);
-            setMyRatingId(bookmarkData.ratingId);
-          }
-        }
-
-        const rawCast = Array.isArray(castData)
-          ? castData
-          : castData.cast || castData.data || [];
-
-        // Consolidate cast by nconst
-        const castMap = new Map();
-        rawCast.forEach((member) => {
-          const key = member.nconst;
-          if (castMap.has(key)) {
-            const existing = castMap.get(key);
-            // Collect all character names
-            if (member.characterName && member.characterName.trim()) {
-              existing.characterNames.push(member.characterName);
-            }
-            // Collect all jobs
-            if (member.job && member.job.trim()) {
-              existing.jobs.add(member.job.trim());
-            }
-          } else {
-            castMap.set(key, {
-              nconst: member.nconst,
-              name: member.name,
-              primaryName: member.primaryName,
-              characterNames:
-                member.characterName && member.characterName.trim()
-                  ? [member.characterName]
-                  : [],
-              jobs: new Set(
-                member.job && member.job.trim() ? [member.job.trim()] : []
-              ),
-              category: member.category,
-            });
-          }
-        });
-
-        // Convert to array and join character names
-        const consolidatedCast = Array.from(castMap.values()).map((member) => ({
-          ...member,
-          allCharacters: member.characterNames
-            .filter((char) => char && char.trim())
-            .filter((char, idx, arr) => arr.indexOf(char) === idx) // Remove duplicates
-            .join(", "),
-          allJobs: Array.from(member.jobs).join(", "),
-        }));
-
-        // Fetch TMDB photos for each cast member
-        const photoPromises = consolidatedCast.map((member) =>
-          fetch(
-            `https://api.themoviedb.org/3/search/person?api_key=${apiKey}&query=${encodeURIComponent(
-              member.name
-            )}`
-          )
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.results && data.results.length > 0) {
-                return {
-                  ...member,
-                  profile_path: data.results[0].profile_path,
-                };
-              }
-              return member;
-            })
-            .catch(() => member)
-        );
-
-        return Promise.all(photoPromises);
-      })
-      .then((castWithPhotos) => {
-        if (castWithPhotos === null) return; // Skip if we redirected
-        setCast(castWithPhotos);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, [id]);
-
-  const handleAddRating = async () => {
-    const rating = parseInt(ratingValue);
-    if (isNaN(rating) || rating < 1 || rating > 10) {
-      alert("Please enter a rating between 1 and 10");
-      return;
-    }
-
-    try {
-      const response = await authFetch(
-        `http://localhost:5079/api/Ratings/movie/${id}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rating }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setMyRating(rating);
-        setMyRatingId(data.id);
-        setShowRatingInput(false);
-        setRatingValue("");
-      } else {
-        throw new Error("Failed to add rating");
-      }
-    } catch (err) {
-      console.error("Error adding rating:", err);
-      alert("Failed to add rating");
-    }
-  };
-
-  const handleUpdateRating = async () => {
-    const rating = parseInt(ratingValue);
-    if (isNaN(rating) || rating < 1 || rating > 10) {
-      alert("Please enter a rating between 1 and 10");
-      return;
-    }
-
-    try {
-      const response = await authFetch(
-        `http://localhost:5079/api/Ratings/${myRatingId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rating }),
-        }
-      );
-
-      if (response.status === 204 || response.ok) {
-        setMyRating(rating);
-        setShowRatingInput(false);
-        setRatingValue("");
-      } else {
-        throw new Error("Failed to update rating");
-      }
-    } catch (err) {
-      console.error("Error updating rating:", err);
-      alert("Failed to update rating");
-    }
-  };
-
-  const handleDeleteRating = async () => {
-    if (!window.confirm("Are you sure you want to delete your rating?")) {
-      return;
-    }
-
-    try {
-      const response = await authFetch(
-        `http://localhost:5079/api/Ratings/${myRatingId}`,
-        { method: "DELETE" }
-      );
-
-      if (response.status === 204 || response.ok) {
-        setMyRating(null);
-        setMyRatingId(null);
-        setShowRatingInput(false);
-        setRatingValue("");
-      } else {
-        throw new Error("Failed to delete rating");
-      }
-    } catch (err) {
-      console.error("Error deleting rating:", err);
-      alert("Failed to delete rating");
-    }
-  };
-
-  const breadcrumbs = [
-    { label: "Browse", path: "/" },
-    ...(location.state?.from ? [location.state.from] : []),
-    {
-      label: location.state?.movieTitle || movie?.movieTitle || "Movie",
-      active: true,
-    },
-  ];
+    setCast(normalizeList(rawCast));
+  }, [rawCast]);
 
   if (loading) {
     return (
-      <div className="d-flex flex-column min-vh-100">
-        <Navbar
-          breadcrumbs={[
-            { label: "Browse", path: "/" },
-            { label: "Movie", active: true },
-          ]}
-        />
-        <Container fluid className="flex-grow-1 py-4 px-5">
-          <div className="text-center py-5">
-            <Spinner animation="border" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </Spinner>
-          </div>
-        </Container>
-        <Footer />
-      </div>
+      <Container className="py-4 text-center">
+        <Spinner />
+      </Container>
     );
   }
 
   if (error) {
     return (
-      <div className="d-flex flex-column min-vh-100">
-        <Navbar
-          breadcrumbs={[
-            { label: "Browse", path: "/" },
-            { label: "Movie", active: true },
-          ]}
-        />
-        <Container fluid className="flex-grow-1 py-4 px-5">
-          <Alert variant="danger">Error: {error}</Alert>
-          <Button onClick={() => navigate(-1)}>Back to Browse</Button>
-        </Container>
-        <Footer />
-      </div>
+      <Container className="py-4">
+        <Alert variant="danger">{String(error)}</Alert>
+      </Container>
     );
   }
 
-  // Don't render if movie is null (redirecting to episode page)
-  if (!movie) {
-    return null;
-  }
+  if (!movie) return null;
+
+  const title =
+    movie.movieTitle ?? movie.primaryTitle ?? movie.title ?? "Untitled";
+
+  const aboutItems = [
+    { label: "Plot", value: movie.plot },
+    { label: "Genres", value: movie.genres?.join(", ") },
+    {
+      label: "Runtime",
+      value: movie.runtimeMinutes
+        ? `${movie.runtimeMinutes} min`
+        : null,
+    },
+    { label: "Released", value: movie.releaseDate },
+    { label: "Language", value: movie.language },
+    { label: "Country", value: movie.country },
+  ];
+
+  const trail = [];
+  if (location.state?.from) trail.push(location.state.from);
+  trail.push({ label: title, path: `/movie/${id}` });
+
+  const posterNode = (
+    <>
+      <SmartImage
+        src={movie.posterUrl}
+        type="title"
+        name={title}
+        size="detail"
+        tmdbSize="w500"
+        style={{
+          width: "100%",
+          maxHeight: 500,
+          objectFit: "cover",
+          borderRadius: 6,
+        }}
+      />
+
+<MyActivityPanel
+  isLoggedIn={isLoggedIn}
+  isBookmarked={isBookmarked}
+  onBookmark={addBookmark}
+  onUnbookmark={removeBookmark}
+  rating={rating}
+  onRate={saveRating}
+  noteTarget={{ tconst: id }}
+/>
+
+    </>
+  );
+
+  const footerContent = (
+    <>
+      
+
+      {cast.length > 0 && (
+        <Card className="shadow-sm">
+          <Card.Header className="fw-semibold bg-white">
+            Cast
+          </Card.Header>
+          <Card.Body>
+            <div className="row g-3">
+              {cast.slice(0, 24).map((m, i) => (
+                <div className="col-6 col-md-4 col-lg-3" key={i}>
+                  <PersonCard
+                    person={m}
+                    context={{
+                      from: { label: title, path: `/movie/${id}` },
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+    </>
+  );
 
   return (
-    <div className="d-flex flex-column min-vh-100">
-      <Navbar breadcrumbs={breadcrumbs} />
-      <Container fluid className="flex-grow-1 py-4 px-5">
-        <Button
-          variant="secondary"
-          className="mb-4"
-          onClick={() => navigate(-1)}
-        >
-          ← Back to Browse
-        </Button>
-
-        <Row>
-          <Col md={4}>
-            {movie.posterUrl ? (
-              <img
-                src={movie.posterUrl}
-                alt={movie.title || movie.primaryTitle}
-                style={{
-                  width: "100%",
-                  maxHeight: "500px",
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  backgroundColor: "#e0e0e0",
-                  height: "500px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <span className="text-muted">No Poster</span>
-              </div>
+    <Container className="py-4">
+      <DetailLayout
+        breadcrumbs={<Breadcrumbs trail={trail} />}
+        title={
+          <>
+            {title}
+            {movie.startYear && (
+              <span className="text-muted ms-2">
+                ({movie.startYear})
+              </span>
             )}
-          </Col>
-          <Col md={8}>
-            <div className="d-flex align-items-center mb-2">
-              <h1 className="mb-0">
-                {location.state?.movieTitle || movie.movieTitle}
-                {movie.startYear && (
-                  <span
-                    className="text-muted"
-                    style={{ fontSize: "1.5rem", marginLeft: "0.5rem" }}
-                  >
-                    ({movie.startYear})
-                  </span>
-                )}
-              </h1>
-              {isLoggedIn && (
-                <Button
-                  variant={isInWatchlist ? "success" : "outline-primary"}
-                  className="ms-3"
-                  onClick={
-                    isInWatchlist
-                      ? handleRemoveFromWatchlist
-                      : handleAddToWatchlist
-                  }
-                >
-                  {isInWatchlist ? (
-                    <>
-                      <BookmarkCheckFill className="me-2" />
-                      Bookmarked
-                    </>
-                  ) : (
-                    <>
-                      <BookmarkPlus className="me-2" />
-                      Add to Watchlist
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-
-            {/* Rating Section */}
-            {isLoggedIn && (
-              <Card className="mt-3">
-                <Card.Body>
-                  <h5>Rating</h5>
-                  {imdbRating && (
-                    <p className="mb-2">
-                      <strong>IMDb Rating:</strong> {imdbRating}/10
-                      {imdbVotes && (
-                        <span className="text-muted ms-2">
-                          ({imdbVotes.toLocaleString()} votes)
-                        </span>
-                      )}
-                    </p>
-                  )}
-
-                  {myRating ? (
-                    <div className="d-flex align-items-center gap-2">
-                      <p className="mb-0">
-                        <StarFill className="text-warning me-1" />
-                        <strong>Your Rating:</strong> {myRating}/10
-                      </p>
-                      {!showRatingInput && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline-primary"
-                            onClick={() => {
-                              setShowRatingInput(true);
-                              setRatingValue(myRating.toString());
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline-danger"
-                            onClick={handleDeleteRating}
-                          >
-                            Delete
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    !showRatingInput && (
-                      <Button
-                        size="sm"
-                        variant="outline-primary"
-                        onClick={() => setShowRatingInput(true)}
-                      >
-                        <Star className="me-1" />
-                        Rate this title
-                      </Button>
-                    )
-                  )}
-
-                  {showRatingInput && (
-                    <div className="mt-3">
-                      <Form.Group className="mb-2">
-                        <Form.Label>Rating (1-10)</Form.Label>
-                        <Form.Control
-                          type="number"
-                          min="1"
-                          max="10"
-                          value={ratingValue}
-                          onChange={(e) => setRatingValue(e.target.value)}
-                          placeholder="Enter rating 1-10"
-                        />
-                      </Form.Group>
-                      <div className="d-flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={
-                            myRating ? handleUpdateRating : handleAddRating
-                          }
-                        >
-                          {myRating ? "Update" : "Submit"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            setShowRatingInput(false);
-                            setRatingValue("");
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </Card.Body>
-              </Card>
+            {movie.titleType && (
+              <Badge bg="secondary" className="ms-3 text-capitalize">
+                {movie.titleType}
+              </Badge>
             )}
-
-            <Card className="mt-3">
-              <Card.Body>
-                <h5>Details</h5>
-                {movie.titleType && (
-                  <p>
-                    <strong>Type:</strong>{" "}
-                    <span className="text-capitalize">{movie.titleType}</span>
-                  </p>
-                )}
-                {movie.originalTitle &&
-                  movie.originalTitle !== movie.movieTitle && (
-                    <p>
-                      <strong>Original Title:</strong> {movie.originalTitle}
-                    </p>
-                  )}
-                {movie.ratedAge && (
-                  <p>
-                    <strong>Rated:</strong> {movie.ratedAge}
-                  </p>
-                )}
-                {movie.releaseDate && (
-                  <p>
-                    <strong>Release Date:</strong>{" "}
-                    {new Date(movie.releaseDate).toLocaleDateString()}
-                  </p>
-                )}
-                {movie.runtimeMinutes && (
-                  <p>
-                    <strong>Runtime:</strong> {movie.runtimeMinutes} minutes
-                  </p>
-                )}
-                {movie.language && (
-                  <p>
-                    <strong>Language:</strong> {movie.language}
-                  </p>
-                )}
-                {movie.country && (
-                  <p>
-                    <strong>Country:</strong> {movie.country}
-                  </p>
-                )}
-                {movie.genres && (
-                  <p>
-                    <strong>Genres:</strong>{" "}
-                    {Array.isArray(movie.genres)
-                      ? movie.genres.join(", ")
-                      : movie.genres}
-                  </p>
-                )}
-                {movie.writerNames && (
-                  <p>
-                    <strong>Writers:</strong> {movie.writerNames}
-                  </p>
-                )}
-                {movie.plot && (
-                  <>
-                    <h5 className="mt-4">Plot</h5>
-                    <p>{movie.plot}</p>
-                  </>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-
-        {cast.length > 0 && (
-          <Row className="mt-4">
-            <Col>
-              <h4 className="mb-3">Cast</h4>
-              <Row xs={2} md={3} lg={6} className="g-3">
-                {cast.slice(0, 12).map((member, index) => (
-                  <Col key={index}>
-                    <Card
-                      className="h-100"
-                      onClick={() =>
-                        navigate(`/person/${member.nconst}`, {
-                          state: {
-                            from: {
-                              label:
-                                location.state?.movieTitle || movie?.movieTitle,
-                              path: `/movie/${id}`,
-                            },
-                          },
-                        })
-                      }
-                      style={{ cursor: "pointer" }}
-                    >
-                      {member.profile_path ? (
-                        <Card.Img
-                          variant="top"
-                          src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
-                          alt={member.primaryName || member.name}
-                          style={{
-                            height: "180px",
-                            objectFit: "cover",
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            backgroundColor: "#e0e0e0",
-                            height: "180px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <span className="text-muted">No Photo</span>
-                        </div>
-                      )}
-                      <Card.Body className="p-2">
-                        <Card.Title
-                          style={{
-                            fontSize: "0.9rem",
-                            marginBottom: "0.25rem",
-                          }}
-                        >
-                          {member.primaryName || member.name}
-                        </Card.Title>
-                        <div
-                          style={{ fontSize: "0.8rem" }}
-                          className="text-muted mb-0"
-                        >
-                          {member.allCharacters && (
-                            <div>
-                              <strong>Roles:</strong> {member.allCharacters}
-                            </div>
-                          )}
-                          {member.allJobs && (
-                            <div>
-                              <strong>Job:</strong> {member.allJobs}
-                            </div>
-                          )}
-                          {!member.allCharacters &&
-                            !member.allJobs &&
-                            member.category && <div>{member.category}</div>}
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            </Col>
-          </Row>
-        )}
-      </Container>
-      <Footer />
-    </div>
+          </>
+        }
+        poster={posterNode}
+        aboutCard={<InfoCard title="About" items={aboutItems} />}
+        footerContent={footerContent}
+      />
+    </Container>
   );
 }
-
-export default MovieDetail;

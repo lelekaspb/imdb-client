@@ -1,737 +1,225 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { authFetch } from "../utils/authFetch";
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import {
   Container,
-  Row,
-  Col,
-  Card,
   Spinner,
   Alert,
-  Button,
-  ListGroup,
+  Card,
   Form,
 } from "react-bootstrap";
-import {
-  BookmarkPlus,
-  BookmarkCheckFill,
-  StarFill,
-  Star,
-} from "react-bootstrap-icons";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 
-function SeriesDetail() {
+import useSeries from "../hooks/useSeries";
+import useCast from "../hooks/useCast";
+import useSeriesEpisodes from "../hooks/useSeriesEpisodes";
+import useBookmarks from "../hooks/useBookmarks";
+import useRating from "../hooks/useRating";
+import { normalizeList } from "../utils/normalizeList";
+
+import PersonCard from "../components/people/PersonCard";
+import EpisodeCard from "../components/series/EpisodeCard";
+import Breadcrumbs from "../components/navigation/Breadcrumbs";
+import DetailLayout from "../components/layout/DetailLayout";
+import InfoCard from "../components/common/InfoCard";
+import SmartImage from "../components/common/SmartImage";
+import MyActivityPanel from "../components/user/MyActivityPanel";
+
+
+export default function SeriesDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const location = useLocation();
-  const [series, setSeries] = useState(null);
+  const navigate = useNavigate();
+
+  const { series, loading, error } = useSeries(id);
+  const rawCast = useCast(id, "series");
+
+  const { episodes = [], loading: loadingEpisodes, error: episodesError } =
+    useSeriesEpisodes(id);
+
+  const { isLoggedIn, isBookmarked, addBookmark, removeBookmark } =
+    useBookmarks({ tconst: id });
+
+  const { rating, saveRating } = useRating(id);
+
   const [cast, setCast] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isInWatchlist, setIsInWatchlist] = useState(false);
-  const [bookmarkId, setBookmarkId] = useState(null);
-  const [userNote, setUserNote] = useState(null);
-  const [userRating, setUserRating] = useState(null);
-  const [imdbRating, setImdbRating] = useState(null);
-  const [imdbVotes, setImdbVotes] = useState(null);
-  const [myRating, setMyRating] = useState(null);
-  const [myRatingId, setMyRatingId] = useState(null);
-  const [showRatingInput, setShowRatingInput] = useState(false);
-  const [ratingValue, setRatingValue] = useState("");
-  const apiKey = "e4f70d8185101e89d6853659d9cfd53b";
+  const [selectedSeason, setSelectedSeason] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    setIsLoggedIn(!!token);
-  }, []);
+    setCast(normalizeList(rawCast));
+  }, [rawCast]);
 
-  const handleAddToWatchlist = async () => {
-    const token = localStorage.getItem("authToken");
-
-    if (!token) {
-      navigate("/user/login");
-      return;
-    }
-
-    const userData = localStorage.getItem("user");
-    let userId = 0;
-
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        userId = user.id || user.userId || 0;
-      } catch (e) {
-        console.error("Failed to parse user data:", e);
-      }
-    }
-
-    try {
-      const response = await authFetch("http://localhost:5079/api/Bookmarks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: userId,
-          tconst: id,
-          nconst: null,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setIsInWatchlist(true);
-        setBookmarkId(data.id || data.bookmarkId);
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to add bookmark:", errorData);
-      }
-    } catch (err) {
-      console.error("Failed to add to watchlist:", err);
-    }
-  };
-
-  const handleRemoveFromWatchlist = async () => {
-    const token = localStorage.getItem("authToken");
-
-    if (!token) {
-      navigate("/user/login");
-      return;
-    }
-
-    if (!bookmarkId) {
-      console.error("No bookmark ID available");
-      return;
-    }
-
-    try {
-      const response = await authFetch(
-        `http://localhost:5079/api/Bookmarks/${bookmarkId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.ok) {
-        setIsInWatchlist(false);
-        setBookmarkId(null);
-      } else {
-        const errorData = await response.json();
-        console.error("Failed to remove bookmark:", errorData);
-      }
-    } catch (err) {
-      console.error("Failed to remove from watchlist:", err);
-    }
-  };
+  const seasons = useMemo(() => {
+    const set = new Set(
+      episodes
+        .map(e => e.seasonNumber)
+        .filter(n => typeof n === "number")
+    );
+    return Array.from(set).sort((a, b) => a - b);
+  }, [episodes]);
 
   useEffect(() => {
-    setLoading(true);
-
-    // Fetch both series details and cast in parallel
-    Promise.all([
-      authFetch(`http://localhost:5079/api/Movies/${id}`),
-      authFetch(`http://localhost:5079/api/Movies/${id}/cast`),
-    ])
-      .then(([seriesRes, castRes]) => {
-        if (!seriesRes.ok) {
-          return seriesRes
-            .json()
-            .then((data) => {
-              throw new Error(data.message || "Failed to fetch series details");
-            })
-            .catch((err) => {
-              if (
-                err.message &&
-                err.message !== "Failed to fetch series details"
-              ) {
-                throw err;
-              }
-              throw new Error("Failed to fetch series details");
-            });
-        }
-
-        const seriesPromise = seriesRes.json();
-        const castPromise = castRes.ok ? castRes.json() : Promise.resolve([]);
-
-        return Promise.all([seriesPromise, castPromise]);
-      })
-      .then(([seriesData, castData]) => {
-        // Redirect to episode page if this is an episode (has parentSeriesId)
-        if (seriesData.parentSeriesId) {
-          setLoading(false);
-          navigate(`/episode/${id}`, { replace: true });
-          return null;
-        }
-
-        setSeries(seriesData);
-
-        // Extract IMDb rating data
-        if (seriesData.imdbAverageRating) {
-          setImdbRating(seriesData.imdbAverageRating);
-        }
-        if (seriesData.imdbNumVotes) {
-          setImdbVotes(seriesData.imdbNumVotes);
-        }
-
-        // Always use userBookmark from API response
-        const bookmarkData = seriesData.userBookmark;
-        if (bookmarkData) {
-          const isBookmarked =
-            bookmarkData.isBookmarked && bookmarkData.bookmarkId !== null;
-          setIsInWatchlist(isBookmarked);
-          setBookmarkId(bookmarkData.bookmarkId);
-          setUserNote(bookmarkData.note);
-          setUserRating(bookmarkData.rating);
-          if (bookmarkData.hasOwnProperty("rating")) {
-            setMyRating(bookmarkData.rating);
-            setMyRatingId(bookmarkData.ratingId);
-          }
-        }
-
-        const rawCast = Array.isArray(castData)
-          ? castData
-          : castData.cast || castData.data || [];
-
-        // Consolidate cast by nconst
-        const castMap = new Map();
-        rawCast.forEach((member) => {
-          const key = member.nconst;
-          if (castMap.has(key)) {
-            const existing = castMap.get(key);
-            // Collect all character names
-            if (member.characterName && member.characterName.trim()) {
-              existing.characterNames.push(member.characterName);
-            }
-            // Collect all jobs
-            if (member.job && member.job.trim()) {
-              existing.jobs.add(member.job.trim());
-            }
-          } else {
-            castMap.set(key, {
-              nconst: member.nconst,
-              name: member.name,
-              primaryName: member.primaryName,
-              characterNames:
-                member.characterName && member.characterName.trim()
-                  ? [member.characterName]
-                  : [],
-              jobs: new Set(
-                member.job && member.job.trim() ? [member.job.trim()] : []
-              ),
-              category: member.category,
-            });
-          }
-        });
-
-        // Convert to array and join character names
-        const consolidatedCast = Array.from(castMap.values()).map((member) => ({
-          ...member,
-          allCharacters: member.characterNames
-            .filter((char) => char && char.trim())
-            .filter((char, idx, arr) => arr.indexOf(char) === idx) // Remove duplicates
-            .join(", "),
-          allJobs: Array.from(member.jobs).join(", "),
-        }));
-
-        // Fetch TMDB photos for each cast member
-        const photoPromises = consolidatedCast.map((member) =>
-          fetch(
-            `https://api.themoviedb.org/3/search/person?api_key=${apiKey}&query=${encodeURIComponent(
-              member.name
-            )}`
-          )
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.results && data.results.length > 0) {
-                return {
-                  ...member,
-                  profile_path: data.results[0].profile_path,
-                };
-              }
-              return member;
-            })
-            .catch(() => member)
-        );
-
-        return Promise.all(photoPromises);
-      })
-      .then((castWithPhotos) => {
-        if (castWithPhotos === null) return; // Skip if we redirected
-        setCast(castWithPhotos);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, [id]);
-
-  const handleAddRating = async () => {
-    const rating = parseInt(ratingValue);
-    if (isNaN(rating) || rating < 1 || rating > 10) {
-      alert("Please enter a rating between 1 and 10");
-      return;
+    if (seasons.length && selectedSeason === null) {
+      setSelectedSeason(seasons[0]);
     }
+  }, [seasons, selectedSeason]);
 
-    try {
-      const response = await authFetch(
-        `http://localhost:5079/api/Ratings/movie/${id}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rating }),
-        }
+  const filteredEpisodes = useMemo(() => {
+    if (!selectedSeason) return [];
+    return episodes
+      .filter(e => e.seasonNumber === selectedSeason)
+      .sort(
+        (a, b) =>
+          (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
       );
-
-      if (response.ok) {
-        const data = await response.json();
-        setMyRating(rating);
-        setMyRatingId(data.id);
-        setShowRatingInput(false);
-        setRatingValue("");
-      } else {
-        throw new Error("Failed to add rating");
-      }
-    } catch (err) {
-      console.error("Error adding rating:", err);
-      alert("Failed to add rating");
-    }
-  };
-
-  const handleUpdateRating = async () => {
-    const rating = parseInt(ratingValue);
-    if (isNaN(rating) || rating < 1 || rating > 10) {
-      alert("Please enter a rating between 1 and 10");
-      return;
-    }
-
-    try {
-      const response = await authFetch(
-        `http://localhost:5079/api/Ratings/${myRatingId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rating }),
-        }
-      );
-
-      if (response.status === 204 || response.ok) {
-        setMyRating(rating);
-        setShowRatingInput(false);
-        setRatingValue("");
-      } else {
-        throw new Error("Failed to update rating");
-      }
-    } catch (err) {
-      console.error("Error updating rating:", err);
-      alert("Failed to update rating");
-    }
-  };
-
-  const handleDeleteRating = async () => {
-    if (!window.confirm("Are you sure you want to delete your rating?")) {
-      return;
-    }
-
-    try {
-      const response = await authFetch(
-        `http://localhost:5079/api/Ratings/${myRatingId}`,
-        { method: "DELETE" }
-      );
-
-      if (response.status === 204 || response.ok) {
-        setMyRating(null);
-        setMyRatingId(null);
-        setShowRatingInput(false);
-        setRatingValue("");
-      } else {
-        throw new Error("Failed to delete rating");
-      }
-    } catch (err) {
-      console.error("Error deleting rating:", err);
-      alert("Failed to delete rating");
-    }
-  };
+  }, [episodes, selectedSeason]);
 
   if (loading) {
     return (
-      <div className="d-flex flex-column min-vh-100">
-        <Navbar
-          breadcrumbs={[
-            { label: "Browse", path: "/" },
-            { label: "Series", active: true },
-          ]}
-        />
-        <Container fluid className="flex-grow-1 py-4 px-5">
-          <div className="text-center py-5">
-            <Spinner animation="border" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </Spinner>
-          </div>
-        </Container>
-        <Footer />
-      </div>
+      <Container className="py-4 text-center">
+        <Spinner />
+      </Container>
     );
   }
 
   if (error) {
     return (
-      <div className="d-flex flex-column min-vh-100">
-        <Navbar
-          breadcrumbs={[
-            { label: "Browse", path: "/" },
-            { label: "Series", active: true },
-          ]}
-        />
-        <Container fluid className="flex-grow-1 py-4 px-5">
-          <Alert variant="danger">Error: {error}</Alert>
-          <Button onClick={() => navigate(-1)}>Back to Browse</Button>
-        </Container>
-        <Footer />
-      </div>
+      <Container className="py-4">
+        <Alert variant="danger">{String(error)}</Alert>
+      </Container>
     );
   }
 
-  // Don't render if series is null (redirecting to episode page)
-  if (!series) {
-    return null;
-  }
+  if (!series) return null;
 
-  const breadcrumbs = [
-    { label: "Browse", path: "/" },
-    ...(location.state?.from ? [location.state.from] : []),
-    {
-      label: location.state?.seriesTitle || series?.seriesTitle || "Series",
-      active: true,
-    },
+  const title =
+    series.seriesTitle ??
+    series.primaryTitle ??
+    series.title ??
+    location.state?.from?.label ??
+    "Series";
+
+  const posterNode = (
+    <>
+      <SmartImage
+        src={series.posterUrl}
+        type="title"
+        name={title}
+        size="detail"
+        tmdbSize="w500"
+        style={{
+          width: "100%",
+          maxHeight: 500,
+          objectFit: "cover",
+          borderRadius: 6,
+        }}
+      />
+
+      <MyActivityPanel
+        isLoggedIn={isLoggedIn}
+        isBookmarked={isBookmarked}
+        onBookmark={addBookmark}
+        onUnbookmark={removeBookmark}
+        rating={rating}
+        onRate={saveRating}
+        noteTarget={{ tconst: id }}
+      />
+
+    </>
+  );
+
+  const aboutItems = [
+    { label: "Plot", value: series.plot },
+    { label: "Language", value: series.language },
+    { label: "Country", value: series.country },
+    { label: "Seasons", value: series.numberOfSeasons },
+    { label: "Released", value: series.releaseDate },
   ];
 
-  return (
-    <div className="d-flex flex-column min-vh-100">
-      <Navbar breadcrumbs={breadcrumbs} />
-      <Container fluid className="flex-grow-1 py-4 px-5">
-        <Button
-          variant="secondary"
-          className="mb-4"
-          onClick={() => navigate(-1)}
-        >
-          ← Back to Browse
-        </Button>
+  const trail = [];
+  if (location.state?.from) trail.push(location.state.from);
+  trail.push({ label: title, path: `/series/${id}` });
 
-        <Row>
-          <Col md={4}>
-            {series.posterUrl ? (
-              <img
-                src={series.posterUrl}
-                alt={series.title || series.primaryTitle}
-                style={{
-                  width: "100%",
-                  maxHeight: "500px",
-                  objectFit: "cover",
+  const footerContent = (
+    <>
+      
+
+      {cast.length > 0 && (
+        <Card className="shadow-sm">
+          <Card.Header className="fw-semibold bg-white">
+            Cast
+          </Card.Header>
+          <Card.Body>
+            <div className="row g-3">
+              {cast.slice(0, 24).map((m, i) => (
+                <div className="col-6 col-md-4 col-lg-3" key={i}>
+                  <PersonCard
+                    person={m}
+                    context={{
+                      from: {
+                        label: title,
+                        path: `/series/${id}`,
+                      },
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+    </>
+  );
+
+  return (
+    <Container className="py-4">
+      <DetailLayout
+        breadcrumbs={<Breadcrumbs trail={trail} />}
+        title={title}
+        poster={posterNode}
+        aboutCard={<InfoCard title="About" items={aboutItems} />}
+        footerContent={footerContent}
+      >
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h4 className="mb-0">Episodes</h4>
+          <Form.Select
+            style={{ maxWidth: 220 }}
+            value={selectedSeason ?? ""}
+            onChange={(e) => setSelectedSeason(Number(e.target.value))}
+          >
+            {seasons.map(s => (
+              <option key={s} value={s}>
+                Season {s}
+              </option>
+            ))}
+          </Form.Select>
+        </div>
+
+        {loadingEpisodes && <Spinner />}
+
+        {episodesError && (
+          <Alert variant="danger">
+            Failed to load episodes
+          </Alert>
+        )}
+
+        <div className="row g-3">
+          {filteredEpisodes.map(ep => (
+            <div
+              key={ep.tconst}
+              className="col-12 col-sm-6 col-md-4 col-lg-3"
+            >
+              <EpisodeCard
+                episode={ep}
+                context={{
+                  from: {
+                    label: title,
+                    path: `/series/${id}`,
+                  },
                 }}
               />
-            ) : (
-              <div
-                style={{
-                  backgroundColor: "#e0e0e0",
-                  height: "500px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <span className="text-muted">No Poster</span>
-              </div>
-            )}
-          </Col>
-          <Col md={8}>
-            <div className="d-flex align-items-center mb-3">
-              <h1 className="mb-0">
-                {location.state?.seriesTitle || series.seriesTitle}
-              </h1>
-              {isLoggedIn && (
-                <Button
-                  variant={isInWatchlist ? "success" : "outline-primary"}
-                  className="ms-3"
-                  onClick={
-                    isInWatchlist
-                      ? handleRemoveFromWatchlist
-                      : handleAddToWatchlist
-                  }
-                >
-                  {isInWatchlist ? (
-                    <>
-                      <BookmarkCheckFill className="me-2" />
-                      Bookmarked
-                    </>
-                  ) : (
-                    <>
-                      <BookmarkPlus className="me-2" />
-                      Add to Watchlist
-                    </>
-                  )}
-                </Button>
-              )}
             </div>
-
-            {/* Rating Section */}
-            {isLoggedIn && (
-              <Card className="mt-3">
-                <Card.Body>
-                  <h5>Rating</h5>
-                  {imdbRating && (
-                    <p className="mb-2">
-                      <strong>IMDb Rating:</strong> {imdbRating}/10
-                      {imdbVotes && (
-                        <span className="text-muted ms-2">
-                          ({imdbVotes.toLocaleString()} votes)
-                        </span>
-                      )}
-                    </p>
-                  )}
-
-                  {myRating ? (
-                    <div className="d-flex align-items-center gap-2">
-                      <p className="mb-0">
-                        <StarFill className="text-warning me-1" />
-                        <strong>Your Rating:</strong> {myRating}/10
-                      </p>
-                      {!showRatingInput && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline-primary"
-                            onClick={() => {
-                              setShowRatingInput(true);
-                              setRatingValue(myRating.toString());
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline-danger"
-                            onClick={handleDeleteRating}
-                          >
-                            Delete
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    !showRatingInput && (
-                      <Button
-                        size="sm"
-                        variant="outline-primary"
-                        onClick={() => setShowRatingInput(true)}
-                      >
-                        <Star className="me-1" />
-                        Rate this title
-                      </Button>
-                    )
-                  )}
-
-                  {showRatingInput && (
-                    <div className="mt-3">
-                      <Form.Group className="mb-2">
-                        <Form.Label>Rating (1-10)</Form.Label>
-                        <Form.Control
-                          type="number"
-                          min="1"
-                          max="10"
-                          value={ratingValue}
-                          onChange={(e) => setRatingValue(e.target.value)}
-                          placeholder="Enter rating 1-10"
-                        />
-                      </Form.Group>
-                      <div className="d-flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={
-                            myRating ? handleUpdateRating : handleAddRating
-                          }
-                        >
-                          {myRating ? "Update" : "Submit"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            setShowRatingInput(false);
-                            setRatingValue("");
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </Card.Body>
-              </Card>
-            )}
-
-            <Card className="mt-3">
-              <Card.Body>
-                <h5>Details</h5>
-                {series.titleType && (
-                  <p>
-                    <strong>Type:</strong>{" "}
-                    <span className="text-capitalize">{series.titleType}</span>
-                  </p>
-                )}
-                {series.originalTitle &&
-                  series.originalTitle !== series.seriesTitle && (
-                    <p>
-                      <strong>Original Title:</strong> {series.originalTitle}
-                    </p>
-                  )}
-                {series.numberOfSeasons && (
-                  <p>
-                    <strong>Number of Seasons:</strong> {series.numberOfSeasons}
-                  </p>
-                )}
-                {series.ratedAge && (
-                  <p>
-                    <strong>Rated:</strong> {series.ratedAge}
-                  </p>
-                )}
-                {series.releaseDate && (
-                  <p>
-                    <strong>Release Date:</strong>{" "}
-                    {new Date(series.releaseDate).toLocaleDateString()}
-                  </p>
-                )}
-                {series.startYear && (
-                  <p>
-                    <strong>Start Year:</strong> {series.startYear}
-                    {series.endYear && ` - ${series.endYear}`}
-                  </p>
-                )}
-                {series.language && (
-                  <p>
-                    <strong>Language:</strong> {series.language}
-                  </p>
-                )}
-                {series.country && (
-                  <p>
-                    <strong>Country:</strong> {series.country}
-                  </p>
-                )}
-                {series.genres && (
-                  <p>
-                    <strong>Genres:</strong>{" "}
-                    {Array.isArray(series.genres)
-                      ? series.genres.join(", ")
-                      : series.genres}
-                  </p>
-                )}
-                {series.writerNames && (
-                  <p>
-                    <strong>Writers:</strong> {series.writerNames}
-                  </p>
-                )}
-                {series.plot && (
-                  <>
-                    <h5 className="mt-4">Plot</h5>
-                    <p>{series.plot}</p>
-                  </>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
-
-        {cast.length > 0 && (
-          <Row className="mt-4">
-            <Col>
-              <h4 className="mb-3">Cast</h4>
-              <Row xs={2} md={3} lg={6} className="g-3">
-                {cast.slice(0, 12).map((member, index) => (
-                  <Col key={index}>
-                    <Card
-                      className="h-100"
-                      onClick={() =>
-                        navigate(`/person/${member.nconst}`, {
-                          state: {
-                            from: {
-                              label:
-                                location.state?.seriesTitle ||
-                                series?.seriesTitle,
-                              path: `/series/${id}`,
-                            },
-                          },
-                        })
-                      }
-                      style={{ cursor: "pointer" }}
-                    >
-                      {member.profile_path ? (
-                        <Card.Img
-                          variant="top"
-                          src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
-                          alt={member.primaryName || member.name}
-                          style={{
-                            height: "180px",
-                            objectFit: "cover",
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            backgroundColor: "#e0e0e0",
-                            height: "180px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <span className="text-muted">No Photo</span>
-                        </div>
-                      )}
-                      <Card.Body className="p-2">
-                        <Card.Title
-                          style={{
-                            fontSize: "0.9rem",
-                            marginBottom: "0.25rem",
-                          }}
-                        >
-                          {member.primaryName || member.name}
-                        </Card.Title>
-                        <div
-                          style={{ fontSize: "0.8rem" }}
-                          className="text-muted mb-0"
-                        >
-                          {member.allCharacters && (
-                            <div>
-                              <strong>Roles:</strong> {member.allCharacters}
-                            </div>
-                          )}
-                          {member.allJobs && (
-                            <div>
-                              <strong>Job:</strong> {member.allJobs}
-                            </div>
-                          )}
-                          {!member.allCharacters &&
-                            !member.allJobs &&
-                            member.category && <div>{member.category}</div>}
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            </Col>
-          </Row>
-        )}
-      </Container>
-      <Footer />
-    </div>
+          ))}
+        </div>
+      </DetailLayout>
+    </Container>
   );
 }
-
-export default SeriesDetail;
