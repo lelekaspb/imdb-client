@@ -19,6 +19,16 @@ import {
 import MovieCard from "../components/movies/MovieCard";
 import { getCardPath, buildPageButtons } from "./listPageHelpers";
 
+/* ---------------------------
+   Debug flag (build-time)
+---------------------------- */
+const ENABLE_DEBUG =
+  import.meta?.env?.MODE === "development" &&
+  import.meta?.env?.VITE_SHOW_DEBUG === "true";
+
+/* ---------------------------
+   Constants
+---------------------------- */
 const GENRES = [
   "All", "Fantasy", "Game-Show", "Adventure", "Documentary", "Family",
   "Action", "Animation", "Music", "Reality-TV", "Sport", "Comedy",
@@ -63,7 +73,9 @@ export default function Browse({ defaultType = "all" }) {
   const pageStart = (page - 1) * params.pageSize + 1;
   const pageEnd = pageStart + list.length - 1;
 
-  // Sync state to URL
+  /* ---------------------------
+     Sync state to URL
+  ---------------------------- */
   useEffect(() => {
     const qs = new URLSearchParams();
     qs.set("page", String(page));
@@ -74,7 +86,9 @@ export default function Browse({ defaultType = "all" }) {
     navigate({ search: `?${qs.toString()}` }, { replace: true });
   }, [page, contentType, genre, sort, navigate]);
 
-  // Reset page when filters change
+  /* ---------------------------
+     Reset page on filter change
+  ---------------------------- */
   useEffect(() => {
     setPage(1);
   }, [contentType, genre, sort]);
@@ -151,13 +165,16 @@ export default function Browse({ defaultType = "all" }) {
             </Form.Select>
           </Form.Group>
 
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => setShowRaw((s) => !s)}
-          >
-            Raw Debug
-          </Button>
+          {/* Debug toggle (DEV ONLY) */}
+          {ENABLE_DEBUG && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setShowRaw((s) => !s)}
+            >
+              Raw Debug
+            </Button>
+          )}
         </div>
 
         {/* Loading */}
@@ -172,16 +189,21 @@ export default function Browse({ defaultType = "all" }) {
           <Alert variant="info">No results found.</Alert>
         )}
 
-        {/* Debug */}
-        <Collapse in={showRaw}>
-          <pre className="p-2 bg-light" style={{ maxHeight: 300, overflow: "auto" }}>
-            {JSON.stringify(
-              { params, preview: list.slice(0, 3) },
-              null,
-              2
-            )}
-          </pre>
-        </Collapse>
+        {/* Debug output (DEV ONLY) */}
+        {ENABLE_DEBUG && (
+          <Collapse in={showRaw}>
+            <pre
+              className="p-2 bg-light"
+              style={{ maxHeight: 300, overflow: "auto" }}
+            >
+              {JSON.stringify(
+                { params, preview: list.slice(0, 3) },
+                null,
+                2
+              )}
+            </pre>
+          </Collapse>
+        )}
 
         {/* Grid */}
         <Row xs={2} md={3} lg={4} xl={5} className="g-4">
