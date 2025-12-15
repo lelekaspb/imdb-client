@@ -1,46 +1,27 @@
 import React from "react";
 import { Card, Badge } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import SmartImage from "../common/SmartImage";
 
 export default function EpisodeCard({ episode, context }) {
   const navigate = useNavigate();
-
   if (!episode) return null;
-
-  const handleClick = () => {
-    navigate(`/episode/${episode.tconst}`, {
-      state: {
-        from: context?.from,
-      },
-    });
-  };
 
   return (
     <Card
       className="h-100"
       role="button"
-      onClick={handleClick}
-      style={{ cursor: "pointer" }}
+      onClick={() =>
+        navigate(`/episode/${episode.tconst}`, { state: { from: context?.from } })
+      }
     >
-      {episode.posterUrl ? (
-        <img
-          src={episode.posterUrl}
-          alt={episode.episodeTitle}
-          style={{ height: 200, objectFit: "cover" }}
-        />
-      ) : (
-        <div
-          style={{
-            height: 200,
-            background: "#e0e0e0",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <span className="text-muted">No Poster</span>
-        </div>
-      )}
+      <SmartImage
+        src={episode.posterUrl}
+        type="title"
+        name={episode.episodeTitle}
+        tmdbSize="w342"
+        style={{ height: 200, objectFit: "cover" }}
+      />
 
       <Card.Body>
         <Badge bg="secondary" className="mb-2">

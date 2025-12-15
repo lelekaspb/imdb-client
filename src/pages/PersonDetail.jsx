@@ -12,6 +12,7 @@ import DetailLayout from "../components/layout/DetailLayout";
 import InfoCard from "../components/common/InfoCard";
 import CreditCard from "../components/people/CreditCard";
 import PersonImageGallery from "../components/people/PersonImageGallery";
+import SmartImage from "../components/common/SmartImage";
 
 export default function PersonDetail() {
   const { id } = useParams();
@@ -43,29 +44,22 @@ export default function PersonDetail() {
   if (!person) return null;
 
   const name = person.primaryName ?? person.name ?? "Unknown";
-  const poster = person.profileUrl ?? null;
 
   const posterNode = (
     <>
-      {poster ? (
-        <img
-          src={poster}
-          alt={name}
-          style={{
-            width: "100%",
-            maxHeight: 500,
-            objectFit: "cover",
-            borderRadius: 6,
-          }}
-        />
-      ) : (
-        <div
-          className="bg-light d-flex align-items-center justify-content-center"
-          style={{ height: 500, borderRadius: 6 }}
-        >
-          <span className="text-muted">No Photo</span>
-        </div>
-      )}
+      <SmartImage
+        src={person.profileUrl}
+        type="person"
+        name={name}
+        size="detail"
+        tmdbSize="w500"
+        style={{
+          width: "100%",
+          maxHeight: 500,
+          objectFit: "cover",
+          borderRadius: 6,
+        }}
+      />
 
       <div className="d-grid gap-2 mt-3">
         {isLoggedIn ? (
@@ -108,10 +102,7 @@ export default function PersonDetail() {
         breadcrumbs={<Breadcrumbs trail={trail} />}
         title={name}
         poster={posterNode}
-        aboutCard={
-          <InfoCard title="About" items={aboutItems} />
-        }
-        
+        aboutCard={<InfoCard title="About" items={aboutItems} />}
         footerContent={
           <>
             {images.length > 0 && (

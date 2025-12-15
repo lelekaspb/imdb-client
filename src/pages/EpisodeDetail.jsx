@@ -10,6 +10,7 @@ import PersonCard from "../components/people/PersonCard";
 import Breadcrumbs from "../components/navigation/Breadcrumbs";
 import DetailLayout from "../components/layout/DetailLayout";
 import InfoCard from "../components/common/InfoCard";
+import SmartImage from "../components/common/SmartImage";
 
 export default function EpisodeDetail() {
   const { id } = useParams();
@@ -47,10 +48,13 @@ export default function EpisodeDetail() {
     episode.title ??
     "Episode";
 
-  const posterNode = episode.posterUrl ? (
-    <img
+  const posterNode = (
+    <SmartImage
       src={episode.posterUrl}
-      alt={title}
+      type="title"
+      name={title}
+      size="detail"
+      tmdbSize="w500"
       style={{
         width: "100%",
         maxHeight: 500,
@@ -58,13 +62,6 @@ export default function EpisodeDetail() {
         borderRadius: 6,
       }}
     />
-  ) : (
-    <div
-      className="bg-light d-flex align-items-center justify-content-center"
-      style={{ height: 500, borderRadius: 6 }}
-    >
-      <span className="text-muted">No Poster</span>
-    </div>
   );
 
   const aboutItems = [
@@ -117,10 +114,7 @@ export default function EpisodeDetail() {
         breadcrumbs={<Breadcrumbs trail={trail} />}
         title={title}
         poster={posterNode}
-        aboutCard={
-          <InfoCard title="About" items={aboutItems} />
-        }
-        
+        aboutCard={<InfoCard title="About" items={aboutItems} />}
         footerContent={footerContent}
       />
     </Container>

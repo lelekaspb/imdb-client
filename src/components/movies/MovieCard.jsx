@@ -1,69 +1,45 @@
 import React from "react";
 import { Card, Badge } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { TMDB_IMAGE_BASE } from "../../config/apiConfig";
 import { formatTitleType } from "../../utils/formatLabel";
 import { getTitleTypeVariant } from "../../utils/titleTypeBadge";
 import { getCardPath } from "../../pages/listPageHelpers";
+import SmartImage from "../common/SmartImage";
 
 import "./MovieCard.css";
-
-const FALLBACK_SVG =
-  "data:image/svg+xml;base64," +
-  btoa(`
-  <svg width="300" height="450" xmlns="http://www.w3.org/2000/svg">
-    <rect width="300" height="450" fill="#e0e0e0"/>
-    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
-      font-size="20" fill="#888">No Image</text>
-  </svg>
-`);
 
 export default function MovieCard({ movie, rating }) {
   const navigate = useNavigate();
   const route = getCardPath(movie);
   const isClickable = Boolean(route);
 
-  const friendlyTitle =
-    movie?.primaryTitle ||
-    movie?.movieTitle ||
-    movie?.seriesTitle ||
-    movie?.title ||
-    movie?.name ||
+  const title =
+    movie?.primaryTitle ??
+    movie?.movieTitle ??
+    movie?.seriesTitle ??
+    movie?.title ??
+    movie?.name ??
     "Untitled";
 
-  const posterPath =
-    movie?.poster_path ||
-    movie?.posterUrl ||
-    movie?.banner ||
+  const poster =
+    movie?.posterUrl ??
+    movie?.poster_path ??
+    movie?.banner ??
     null;
-
-  let posterSrc = FALLBACK_SVG;
-  if (posterPath) {
-    posterSrc = String(posterPath).startsWith("/")
-      ? `${TMDB_IMAGE_BASE}/w342${posterPath}`
-      : posterPath;
-  }
-
-  const handleClick = () => {
-    if (!route) return;
-    navigate(route, { state: { from: { label: friendlyTitle } } });
-  };
 
   return (
     <Card
       className="movie-card"
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
-      onClick={isClickable ? handleClick : undefined}
+      onClick={isClickable ? () => navigate(route, { state: { from: { label: title } } }) : undefined}
     >
       <div className="movie-card__poster-wrapper">
-        <img
-          src={posterSrc}
-          alt={friendlyTitle}
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = FALLBACK_SVG;
-          }}
+        <SmartImage
+          src={poster}
+          type="title"
+          name={title}
+          tmdbSize="w342"
           className="movie-card__poster"
         />
 
@@ -78,7 +54,7 @@ export default function MovieCard({ movie, rating }) {
       </div>
 
       <Card.Body className="movie-card__body">
-        <div className="movie-card__title">{friendlyTitle}</div>
+        <div className="movie-card__title">{title}</div>
       </Card.Body>
 
       {typeof rating === "number" && (

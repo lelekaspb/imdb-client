@@ -22,6 +22,7 @@ import EpisodeCard from "../components/series/EpisodeCard";
 import Breadcrumbs from "../components/navigation/Breadcrumbs";
 import DetailLayout from "../components/layout/DetailLayout";
 import InfoCard from "../components/common/InfoCard";
+import SmartImage from "../components/common/SmartImage";
 
 export default function SeriesDetail() {
   const { id } = useParams();
@@ -96,25 +97,19 @@ export default function SeriesDetail() {
 
   const posterNode = (
     <>
-      {series.posterUrl ? (
-        <img
-          src={series.posterUrl}
-          alt={title}
-          style={{
-            width: "100%",
-            maxHeight: 500,
-            objectFit: "cover",
-            borderRadius: 6,
-          }}
-        />
-      ) : (
-        <div
-          className="d-flex align-items-center justify-content-center bg-light"
-          style={{ height: 500, borderRadius: 6 }}
-        >
-          <span className="text-muted">No Poster</span>
-        </div>
-      )}
+      <SmartImage
+        src={series.posterUrl}
+        type="title"
+        name={title}
+        size="detail"
+        tmdbSize="w500"
+        style={{
+          width: "100%",
+          maxHeight: 500,
+          objectFit: "cover",
+          borderRadius: 6,
+        }}
+      />
 
       <div className="d-grid gap-2 mt-3">
         {isLoggedIn ? (
@@ -133,9 +128,7 @@ export default function SeriesDetail() {
 
             <Form.Select
               value={rating ?? ""}
-              onChange={(e) =>
-                saveRating(Number(e.target.value))
-              }
+              onChange={(e) => saveRating(Number(e.target.value))}
             >
               <option value="">Rate this series</option>
               {[1,2,3,4,5,6,7,8,9,10].map(n => (
@@ -176,10 +169,7 @@ export default function SeriesDetail() {
         <Card.Body>
           <div className="row g-3">
             {cast.slice(0, 24).map((m, i) => (
-              <div
-                className="col-6 col-md-4 col-lg-3"
-                key={i}
-              >
+              <div className="col-6 col-md-4 col-lg-3" key={i}>
                 <PersonCard
                   person={m}
                   context={{
@@ -202,20 +192,15 @@ export default function SeriesDetail() {
         breadcrumbs={<Breadcrumbs trail={trail} />}
         title={title}
         poster={posterNode}
-        aboutCard={
-          <InfoCard title="About" items={aboutItems} />
-        }
+        aboutCard={<InfoCard title="About" items={aboutItems} />}
         footerContent={castContent}
       >
-
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h4 className="mb-0">Episodes</h4>
           <Form.Select
             style={{ maxWidth: 220 }}
             value={selectedSeason ?? ""}
-            onChange={(e) =>
-              setSelectedSeason(Number(e.target.value))
-            }
+            onChange={(e) => setSelectedSeason(Number(e.target.value))}
           >
             {seasons.map(s => (
               <option key={s} value={s}>
