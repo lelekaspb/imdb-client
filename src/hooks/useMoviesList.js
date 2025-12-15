@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import movieService from "../api/movieService";
 import { enrichTitleWithImage } from "../utils/enrichTitle";
+import { getTypeFromTitleType } from "../pages/listPageHelpers";
 
 function normalizeList(payload) {
   if (!payload) return [];
@@ -54,9 +55,21 @@ export default function useMoviesList(params = {}) {
 
         if (!mounted) return;
 
-        // Remove rejected titles
         const cleaned = enriched.filter(Boolean);
-        setList(cleaned);
+
+        // ✅ Home-only filtering (opt-in)
+        const filtered = params.excludeEpisodes
+          ? cleaned.filter(
+              (item) =>
+                getTypeFromTitleType(
+                  item?.titleType ??
+                  item?.TitleType ??
+                  item?.type
+                ) !== "episode"
+            )
+          : cleaned;
+
+        setList(filtered);
 
         const totalFromAPI =
           payload.total ??

@@ -28,7 +28,8 @@ export default function MovieDetail() {
   const location = useLocation();
 
   const { movie, loading, error } = useMovie(id);
-  const rawCast = useCast(id);
+  const rawCast = useCast(id, "movie");
+
   const [cast, setCast] = useState([]);
 
   const { isLoggedIn, isBookmarked, addBookmark, removeBookmark } =

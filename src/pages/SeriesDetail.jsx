@@ -29,7 +29,8 @@ export default function SeriesDetail() {
   const navigate = useNavigate();
 
   const { series, loading, error } = useSeries(id);
-  const rawCast = useCast(id);
+  const rawCast = useCast(id, "series");
+
   const { episodes = [], loading: loadingEpisodes, error: episodesError } =
     useSeriesEpisodes(id);
 

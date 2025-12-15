@@ -220,10 +220,17 @@ export default function Browse({ defaultType = "all" }) {
             return (
               <Col key={id}>
                 <Card
-                  className="h-100"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => navigate(getCardPath(item))}
-                >
+  className="h-100"
+  style={{ cursor: "pointer" }}
+  onClick={() =>
+    navigate(getCardPath(item), {
+      state: {
+        from: { label: "Browse", path: "/browse" },
+      },
+    })
+  }
+>
+
                   <MovieCard movie={item} />
                   <Card.Footer>
                     <small className="text-muted">

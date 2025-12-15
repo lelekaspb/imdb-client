@@ -6,7 +6,6 @@ import tmdb from "../api/tmdbClient";
  * Cleans backend values like:
  * "['Walter White']" -> "Walter White"
  */
-
 function cleanValue(v) {
   if (!v) return "";
   return String(v).replace(/[\[\]']+/g, "").trim();
@@ -22,6 +21,7 @@ export default function useCast(id) {
 
     async function load() {
       try {
+        // ✅ This endpoint works for movies, series, and episodes
         const rawCast = await movieService.getCast(id);
 
         // --------------------
@@ -29,7 +29,7 @@ export default function useCast(id) {
         // --------------------
         const castMap = new Map();
 
-        rawCast.forEach(member => {
+        rawCast.forEach((member) => {
           if (!member?.nconst) return;
 
           if (castMap.has(member.nconst)) {
@@ -47,15 +47,11 @@ export default function useCast(id) {
               nconst: member.nconst,
               primaryName: member.primaryName ?? member.name ?? "Unknown",
               name: member.name ?? member.primaryName,
-
               characterNames: member.characterName?.trim()
                 ? [member.characterName]
                 : [],
-
               jobs: new Set(
-                member.job?.trim()
-                  ? [member.job.trim()]
-                  : []
+                member.job?.trim() ? [member.job.trim()] : []
               ),
             });
           }
@@ -64,40 +60,44 @@ export default function useCast(id) {
         // --------------------
         // Normalize fields
         // --------------------
-        const consolidated = Array.from(castMap.values()).map(member => {
-          const characters = member.characterNames
-            .map(cleanValue)
-            .filter(Boolean)
-            .filter((c, i, arr) => arr.indexOf(c) === i)
-            .join(", ");
+        const consolidated = Array.from(castMap.values()).map(
+          (member) => {
+            const characters = member.characterNames
+              .map(cleanValue)
+              .filter(Boolean)
+              .filter((c, i, arr) => arr.indexOf(c) === i)
+              .join(", ");
 
-          const jobs = Array.from(member.jobs)
-            .map(cleanValue)
-            .filter(Boolean)
-            .join(", ");
+            const jobs = Array.from(member.jobs)
+              .map(cleanValue)
+              .filter(Boolean)
+              .join(", ");
 
-          return {
-            ...member,
-            allCharacters: characters,
-            allJobs: jobs || (characters ? "Actor" : ""),
-          };
-        });
+            return {
+              ...member,
+              allCharacters: characters,
+              allJobs: jobs || (characters ? "Actor" : ""),
+            };
+          }
+        );
 
         // --------------------
         // Resolve images via IMDb → TMDB
         // --------------------
         const withPhotos = await Promise.all(
-          consolidated.map(async member => {
+          consolidated.map(async (member) => {
             try {
-              //  Find TMDB person ID via IMDb ID
-              const tmdbId = await tmdb.findPersonByImdb(member.nconst);
+              const tmdbId = await tmdb.findPersonByImdb(
+                member.nconst
+              );
 
-              // Fetch profile image by TMDB ID
               let url = tmdbId
-                ? await tmdb.getPersonProfileByTmdbId(tmdbId, "w185")
+                ? await tmdb.getPersonProfileByTmdbId(
+                    tmdbId,
+                    "w185"
+                  )
                 : null;
 
-              //  Fallback: name search (last resort)
               if (!url && member.primaryName) {
                 url = await tmdb.searchPersonByName(
                   member.primaryName,

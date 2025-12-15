@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { TMDB_IMAGE_BASE } from "../../config/apiConfig";
 import { formatTitleType } from "../../utils/formatLabel";
 import { getTitleTypeVariant } from "../../utils/titleTypeBadge";
+import { getCardPath } from "../../pages/listPageHelpers";
+
 import "./MovieCard.css";
 
 const FALLBACK_SVG =
@@ -16,23 +18,10 @@ const FALLBACK_SVG =
   </svg>
 `);
 
-function resolveRoute(item) {
-  const id = item?.tconst ?? item?.id ?? item?.nconst;
-  if (!id) return null;
-
-  if (item?.nconst && !item?.tconst) return `/person/${id}`;
-
-  const type = String(item?.titleType || "").toLowerCase();
-  if (type === "movie") return `/movie/${id}`;
-  if (type.includes("episode")) return `/episode/${id}`;
-  if (type.includes("series")) return `/series/${id}`;
-
-  return `/movie/${id}`;
-}
 
 export default function MovieCard({ movie }) {
   const navigate = useNavigate();
-  const route = resolveRoute(movie);
+  const route = getCardPath(movie);
   const isClickable = Boolean(route);
 
   const friendlyTitle =
