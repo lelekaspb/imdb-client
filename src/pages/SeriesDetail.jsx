@@ -206,7 +206,7 @@ export default function SeriesDetail() {
         }
         footerContent={castContent}
       >
-        {/* EPISODES — no Card here (DetailLayout already provides it) */}
+
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h4 className="mb-0">Episodes</h4>
           <Form.Select

@@ -1,4 +1,4 @@
-// src/utils/authFetch.js
+
 
 /**
  * Wrapper around fetch that automatically:
@@ -36,7 +36,6 @@ export async function authFetch(url, options = {}) {
       localStorage.removeItem("user");
 
       /**
-       * 🔥 Important behavior:
        * Only redirect if the user previously had a token
        * and this request is not marked as silent.
        */

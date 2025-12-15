@@ -16,7 +16,6 @@ export default function AppNavbar() {
     const q = searchQuery.trim();
     if (!q) return;
 
-    // ✅ CRITICAL FIX: encode query
     navigate(`/search?query=${encodeURIComponent(q)}`);
   };
 

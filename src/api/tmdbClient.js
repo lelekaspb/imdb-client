@@ -1,4 +1,3 @@
-// src/api/tmdbClient.js
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const TMDB_IMG = "https://image.tmdb.org/t/p";
 const KEY = import.meta.env.VITE_TMDB_API_KEY || "";
@@ -45,7 +44,7 @@ async function fetchJson(url) {
 }
 
 /* =========================
-   👤 PEOPLE (UNCHANGED)
+    PEOPLE
 ========================= */
 
 export async function findPersonByImdb(nconst) {
@@ -113,7 +112,7 @@ export async function searchPersonByName(name, size = "w185") {
 }
 
 /* =========================
-   🎬 TITLES (NEW, SAFE)
+   TITLES 
 ========================= */
 
 export async function searchTitlePosterByName(title, size = "w342") {

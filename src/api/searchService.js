@@ -1,4 +1,3 @@
-// src/api/searchService.js
 import backend from "./backendClient";
 
 export const searchService = {

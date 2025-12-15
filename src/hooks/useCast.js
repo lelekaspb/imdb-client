@@ -6,6 +6,7 @@ import tmdb from "../api/tmdbClient";
  * Cleans backend values like:
  * "['Walter White']" -> "Walter White"
  */
+
 function cleanValue(v) {
   if (!v) return "";
   return String(v).replace(/[\[\]']+/g, "").trim();
@@ -88,15 +89,15 @@ export default function useCast(id) {
         const withPhotos = await Promise.all(
           consolidated.map(async member => {
             try {
-              // 1️⃣ Find TMDB person ID via IMDb ID
+              //  Find TMDB person ID via IMDb ID
               const tmdbId = await tmdb.findPersonByImdb(member.nconst);
 
-              // 2️⃣ Fetch profile image by TMDB ID
+              // Fetch profile image by TMDB ID
               let url = tmdbId
                 ? await tmdb.getPersonProfileByTmdbId(tmdbId, "w185")
                 : null;
 
-              // 3️⃣ Fallback: name search (last resort)
+              //  Fallback: name search (last resort)
               if (!url && member.primaryName) {
                 url = await tmdb.searchPersonByName(
                   member.primaryName,

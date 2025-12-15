@@ -1,5 +1,3 @@
-// src/utils/normalizeList.js
-
 /**
  * Normalizes API responses that may return:
  * - an array directly

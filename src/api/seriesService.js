@@ -1,4 +1,3 @@
-// src/api/seriesService.js
 import backend from "./backendClient";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -18,15 +17,11 @@ const seriesService = {
     return backend.get(`/Movies?${qs}`);
   },
 
-  // ✅ FIXED: use existing backend endpoint
   getSeries(tconst) {
     if (!tconst) {
       return Promise.reject(new Error("Missing series tconst"));
     }
-
-    // This endpoint EXISTS and already works
     return backend.get(`/Movies/${tconst}`);
-    // (or `/Titles/${tconst}` if that’s what your controller exposes)
   },
 
   getEpisode(tconst) {

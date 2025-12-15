@@ -1,4 +1,3 @@
-// src/api/movieService.js
 import backend from "./backendClient";
 
 const DEFAULT_PAGE_SIZE = 20;

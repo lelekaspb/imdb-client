@@ -25,15 +25,6 @@ export default function useUserSearchHistory({ page, pageSize }) {
       .then((res) => {
         if (!mounted) return;
 
-        // 🔍 DEBUG (safe to remove later)
-        console.log("SearchHistory raw response:", res.data);
-
-        /**
-         * Handle ALL common backend response shapes:
-         * 1) Array
-         * 2) { data, total }
-         * 3) { items, totalCount }
-         */
         if (Array.isArray(res.data)) {
           setHistory(res.data);
           setTotal(res.data.length);

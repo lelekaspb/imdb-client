@@ -11,7 +11,6 @@ const FALLBACK_SVG =
       font-size="14" fill="#888">No Photo</text>
   </svg>`);
 
-// Preserve original normalization logic
 function normalize(v) {
   if (!v) return "";
   if (Array.isArray(v)) return v.join(", ");
@@ -23,7 +22,7 @@ export default function PersonCard({
   person,
   context = {},
   className = "",
-  showJobBadge = false, // ✅ only bookmarks opt-in
+  showJobBadge = false, 
 }) {
   const navigate = useNavigate();
 
@@ -88,7 +87,6 @@ export default function PersonCard({
           {name}
         </Card.Title>
 
-        {/* ✅ ORIGINAL DETAIL PAGE TEXT IS BACK */}
         {!showJobBadge && (jobs || roles) && (
           <div className="text-muted" style={{ fontSize: "0.8rem" }}>
             {jobs && <div>{jobs}</div>}

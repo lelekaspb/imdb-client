@@ -1,4 +1,3 @@
-// src/hooks/usePersonDetails.js
 import { useEffect, useState } from "react";
 import personService from "../api/personService";
 

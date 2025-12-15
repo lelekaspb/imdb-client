@@ -1,4 +1,3 @@
-// src/components/RequireAuth.jsx
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -16,7 +15,7 @@ export default function RequireAuth({ children }) {
   // While we are checking token validity, avoid redirecting.
   // Return null (or a spinner) to prevent redirect-to-login during initial silent validation.
   if (loading) {
-    return null; // or a small spinner if you prefer
+    return null; 
   }
 
   if (!isLoggedIn) {

@@ -1,4 +1,3 @@
-// src/pages/SearchResults.jsx
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import useSearchResults from "../hooks/useSearchResults";

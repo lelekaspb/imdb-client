@@ -1,4 +1,3 @@
-// src/hooks/useSearchResults.js
 import { useEffect, useMemo, useState } from "react";
 import { searchService } from "../api/searchService";
 import movieService from "../api/movieService";
@@ -9,8 +8,7 @@ const PAGE_SIZE = 20;
 const TMDB_ENRICH_LIMIT = 8;
 
 /**
- * Normalize raw search hit into minimal safe shape.
- * NOTE: titleType may legitimately be null.
+ * Normalize raw search hit into minimal safe shape
  */
 function normalizeSearchHit(hit) {
   return {
@@ -69,7 +67,7 @@ export default function useSearchResults(query) {
         const isLoggedIn = Boolean(localStorage.getItem("authToken"));
 
         /* =====================================================
-           🔓 ANONYMOUS USERS — posters only
+           ANONYMOUS USERS — posters only
         ===================================================== */
         if (!isLoggedIn) {
           const toEnrich = base.slice(0, TMDB_ENRICH_LIMIT);
@@ -93,7 +91,7 @@ export default function useSearchResults(query) {
         }
 
         /* =====================================================
-           🔒 LOGGED-IN USERS — POLYMORPHIC HYDRATION
+           LOGGED-IN USERS — POLYMORPHIC HYDRATION
         ===================================================== */
 
         const hydrated = await Promise.all(
@@ -115,24 +113,24 @@ export default function useSearchResults(query) {
                 return { ...item, ...m, titleType: "movie" };
               }
 
-              // 🔥 UNKNOWN TYPE — PROBE BACKEND (REQUIRED)
-              // 1️⃣ Try episode
+              // UNKNOWN TYPE — PROBE BACKEND (REQUIRED)
+              // Try episode
               try {
                 const ep = await seriesService.getEpisode(item.tconst);
                 return { ...item, ...ep, titleType: "episode" };
               } catch {}
 
-              // 2️⃣ Try series
+              // Try series
               try {
                 const s = await seriesService.getSeries(item.tconst);
                 return { ...item, ...s, titleType: "series" };
               } catch {}
 
-              // 3️⃣ Fallback: movie
+              // Fallback: movie
               const m = await movieService.getMovie(item.tconst);
               return { ...item, ...m, titleType: "movie" };
             } catch {
-              // Worst case: keep minimal search data
+              
               return item;
             }
           })
@@ -152,7 +150,7 @@ export default function useSearchResults(query) {
   }, [query]);
 
   /* =====================================================
-     Pagination (frontend only)
+     Pagination 
   ===================================================== */
   const totalPages = Math.ceil(allResults.length / PAGE_SIZE);
 

@@ -1,4 +1,3 @@
-// src/hooks/useEpisode.js
 import { useEffect, useState } from "react";
 import backend from "../api/backendClient";
 

@@ -1,5 +1,3 @@
-// src/pages/listPageHelpers.js
-
 /**
  * Normalizes a raw titleType value to one of:
  * "movie" | "series" | "episode"
@@ -44,7 +42,6 @@ export function getTypeFromTitleType(raw) {
   
   /**
    * Builds a compressed pagination array with ellipses.
-   * Example: [1, "ellipsis", 4, 5, 6, "ellipsis", 20]
    */
   export function buildPageButtons(currentPage, totalPages) {
     if (!totalPages) {

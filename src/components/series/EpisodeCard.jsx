@@ -1,4 +1,3 @@
-// src/components/series/EpisodeCard.jsx
 import React from "react";
 import { Card, Badge } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";

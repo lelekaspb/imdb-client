@@ -1,4 +1,3 @@
-// src/config/apiConfig.js
 // Centralized external API config constants for frontend usage.
 //
 // NOTE: Vite exposes env vars through import.meta.env

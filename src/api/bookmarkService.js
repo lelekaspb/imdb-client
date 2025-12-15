@@ -16,14 +16,14 @@ export const bookmarkService = {
     return backend.post("/Bookmarks", {
       userId: getUserId(),
       tconst: tconst,
-      nconst: null,        // 🚨 MUST be null
+      nconst: null,        // MUST be null
     });
   },
 
   addPerson(nconst) {
     return backend.post("/Bookmarks", {
       userId: getUserId(),
-      tconst: null,        // 🚨 MUST be null
+      tconst: null,        // MUST be null
       nconst: nconst,
     });
   },

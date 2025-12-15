@@ -67,9 +67,7 @@ export default function App() {
       <ScrollToTop />
 
       <Routes>
-        {/* Everything wrapped in MainLayout */}
         <Route element={<MainLayout />}>
-          {/* ✅ Home is now the root */}
           <Route path="/" element={<Home />} />
 
           {/* Browse / Lists */}

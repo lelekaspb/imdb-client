@@ -1,4 +1,3 @@
-// src/components/people/CreditCard.jsx
 import React from "react";
 import { Card } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 export default function CreditCard({ credit }) {
   const navigate = useNavigate();
 
-  // ✅ HARD GUARD
+  // HARD GUARD
   if (!credit) return null;
 
   // Normalize ID safely

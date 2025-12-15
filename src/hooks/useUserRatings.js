@@ -14,7 +14,7 @@ export default function useUserRatings() {
       .then(res => {
         if (!mounted) return;
 
-        // ✅ backend returns a plain array
+        // backend returns a plain array
         if (Array.isArray(res)) {
           setItems(res);
         } else {

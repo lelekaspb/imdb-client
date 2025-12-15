@@ -25,7 +25,7 @@ export async function enrichPerson(person) {
   const [enriched] = await enrichCastWithImages([person]);
   const out = enriched ?? person;
 
-  // 🔑 Normalize + format profession for bookmarks
+  // Normalize + format profession for bookmarks
   if (!out.job && out.primaryProfession) {
     out.job = formatProfession(out.primaryProfession);
   }

@@ -1,4 +1,3 @@
-// src/components/ui/InfoCard.jsx
 import React from "react";
 import { Card, ListGroup } from "react-bootstrap";
 import {
@@ -33,7 +32,7 @@ function iconForLabel(label = "") {
 function formatValue(label, value) {
   if (!value) return null;
 
-  // ✅ Reuse PersonCard formatting for professions
+  //  Reuse PersonCard formatting for professions
   if (label.toLowerCase().includes("profession")) {
     return formatProfession(value);
   }

@@ -1,5 +1,3 @@
-// src/utils/getTitleRoute.js
-
 /**
  * Resolves the correct route path for a title based on its type.
  *

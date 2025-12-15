@@ -47,7 +47,6 @@ export default function UserBookmarksPanel() {
           <div className="d-flex flex-wrap gap-3">
             {personBookmarks.map(({ person, bookmarkId }) => (
               <Card key={bookmarkId} style={{ width: 220 }}>
-                {/* 👇 PersonCard already shows image + job */}
                 <PersonCard
                   person={person}
                   showJobBadge />

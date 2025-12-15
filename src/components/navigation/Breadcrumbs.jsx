@@ -1,4 +1,3 @@
-// src/components/navigation/Breadcrumbs.jsx
 import React from "react";
 import { Breadcrumb, Fade } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";

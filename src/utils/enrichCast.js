@@ -94,7 +94,7 @@ export default async function enrichCastWithImages(cast = [], opts = {}) {
             continue;
           }
         } catch {
-          // ignore
+          
         }
       }
 

@@ -1,4 +1,3 @@
-// api/userService.ts
 import backend from "./backendClient";
 
 export const userService = {

@@ -1,4 +1,3 @@
-// src/hooks/useMoviesList.js
 import { useEffect, useState } from "react";
 import movieService from "../api/movieService";
 import { enrichTitleWithImage } from "../utils/enrichTitle";

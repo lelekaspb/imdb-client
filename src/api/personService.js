@@ -1,6 +1,5 @@
-// src/api/personService.js
 import backend from "./backendClient";
-import tmdbClient from "./tmdbClient"; // assumes file at src/api/tmdbClient.js
+import tmdbClient from "./tmdbClient"; 
 
 /**
  * personService — normalized API for fetching person details and filmography.
@@ -135,7 +134,7 @@ export const personService = {
         }
       } catch (e) {
         console.debug("[personService] TMDB enrichment failed", e);
-        // proceed — it's non-fatal
+        
       }
     }
 

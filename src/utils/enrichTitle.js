@@ -1,4 +1,3 @@
-// src/utils/enrichTitle.js
 import tmdbClient from "../api/tmdbClient";
 
 /**
@@ -47,7 +46,7 @@ export async function enrichTitleWithImage(title, opts = {}) {
     const url = await tmdbClient.searchTitlePosterByName(name, size);
 
     if (!url && requireImage) {
-      // 🔒 STRICT MODE: no image → no title
+      // STRICT MODE: no image → no title
       return null;
     }
 
