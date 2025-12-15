@@ -13,6 +13,7 @@ import InfoCard from "../components/common/InfoCard";
 import CreditCard from "../components/people/CreditCard";
 import PersonImageGallery from "../components/people/PersonImageGallery";
 import SmartImage from "../components/common/SmartImage";
+import NotesSection from "../components/notes/NotesSection";
 
 export default function PersonDetail() {
   const { id } = useParams();
@@ -105,6 +106,8 @@ export default function PersonDetail() {
         aboutCard={<InfoCard title="About" items={aboutItems} />}
         footerContent={
           <>
+            <NotesSection nconst={id} />
+
             {images.length > 0 && (
               <Card className="mb-4 shadow-sm">
                 <Card.Header className="fw-semibold bg-white">

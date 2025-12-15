@@ -11,6 +11,7 @@ import Breadcrumbs from "../components/navigation/Breadcrumbs";
 import DetailLayout from "../components/layout/DetailLayout";
 import InfoCard from "../components/common/InfoCard";
 import SmartImage from "../components/common/SmartImage";
+import NotesSection from "../components/notes/NotesSection";
 
 export default function EpisodeDetail() {
   const { id } = useParams();
@@ -85,28 +86,33 @@ export default function EpisodeDetail() {
   }
   trail.push({ label: title, path: `/episode/${id}` });
 
-  const footerContent =
-    cast.length > 0 ? (
-      <Card className="shadow-sm">
-        <Card.Header className="fw-semibold bg-white">
-          Cast
-        </Card.Header>
-        <Card.Body>
-          <div className="row g-3">
-            {cast.slice(0, 24).map((m, i) => (
-              <div className="col-6 col-md-4 col-lg-3" key={i}>
-                <PersonCard
-                  person={m}
-                  context={{
-                    from: { label: title, path: `/episode/${id}` },
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        </Card.Body>
-      </Card>
-    ) : null;
+  const footerContent = (
+    <>
+      <NotesSection tconst={id} />
+
+      {cast.length > 0 && (
+        <Card className="shadow-sm">
+          <Card.Header className="fw-semibold bg-white">
+            Cast
+          </Card.Header>
+          <Card.Body>
+            <div className="row g-3">
+              {cast.slice(0, 24).map((m, i) => (
+                <div className="col-6 col-md-4 col-lg-3" key={i}>
+                  <PersonCard
+                    person={m}
+                    context={{
+                      from: { label: title, path: `/episode/${id}` },
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+    </>
+  );
 
   return (
     <Container className="py-4">

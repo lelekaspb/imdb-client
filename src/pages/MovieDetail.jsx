@@ -22,6 +22,7 @@ import Breadcrumbs from "../components/navigation/Breadcrumbs";
 import DetailLayout from "../components/layout/DetailLayout";
 import InfoCard from "../components/common/InfoCard";
 import SmartImage from "../components/common/SmartImage";
+import NotesSection from "../components/notes/NotesSection";
 
 export default function MovieDetail() {
   const { id } = useParams();
@@ -62,8 +63,6 @@ export default function MovieDetail() {
   const title =
     movie.movieTitle ?? movie.primaryTitle ?? movie.title ?? "Untitled";
 
-  const poster = movie.posterUrl ?? movie.poster ?? null;
-
   const aboutItems = [
     { label: "Plot", value: movie.plot },
     { label: "Genres", value: movie.genres?.join(", ") },
@@ -85,7 +84,7 @@ export default function MovieDetail() {
   const posterNode = (
     <>
       <SmartImage
-        src={poster}
+        src={movie.posterUrl}
         type="title"
         name={title}
         size="detail"
@@ -135,26 +134,33 @@ export default function MovieDetail() {
     </>
   );
 
-  const footerContent =
-    cast.length > 0 ? (
-      <Card className="shadow-sm">
-        <Card.Header className="fw-semibold bg-white">
-          Cast
-        </Card.Header>
-        <Card.Body>
-          <div className="row g-3">
-            {cast.slice(0, 24).map((m, i) => (
-              <div className="col-6 col-md-4 col-lg-3" key={i}>
-                <PersonCard
-                  person={m}
-                  context={{ from: { label: title, path: `/movie/${id}` } }}
-                />
-              </div>
-            ))}
-          </div>
-        </Card.Body>
-      </Card>
-    ) : null;
+  const footerContent = (
+    <>
+      <NotesSection tconst={id} />
+
+      {cast.length > 0 && (
+        <Card className="shadow-sm">
+          <Card.Header className="fw-semibold bg-white">
+            Cast
+          </Card.Header>
+          <Card.Body>
+            <div className="row g-3">
+              {cast.slice(0, 24).map((m, i) => (
+                <div className="col-6 col-md-4 col-lg-3" key={i}>
+                  <PersonCard
+                    person={m}
+                    context={{
+                      from: { label: title, path: `/movie/${id}` },
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+    </>
+  );
 
   return (
     <Container className="py-4">
@@ -164,7 +170,9 @@ export default function MovieDetail() {
           <>
             {title}
             {movie.startYear && (
-              <span className="text-muted ms-2">({movie.startYear})</span>
+              <span className="text-muted ms-2">
+                ({movie.startYear})
+              </span>
             )}
             {movie.titleType && (
               <Badge bg="secondary" className="ms-3 text-capitalize">

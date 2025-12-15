@@ -23,6 +23,7 @@ import Breadcrumbs from "../components/navigation/Breadcrumbs";
 import DetailLayout from "../components/layout/DetailLayout";
 import InfoCard from "../components/common/InfoCard";
 import SmartImage from "../components/common/SmartImage";
+import NotesSection from "../components/notes/NotesSection";
 
 export default function SeriesDetail() {
   const { id } = useParams();
@@ -49,7 +50,9 @@ export default function SeriesDetail() {
 
   const seasons = useMemo(() => {
     const set = new Set(
-      episodes.map(e => e.seasonNumber).filter(n => typeof n === "number")
+      episodes
+        .map(e => e.seasonNumber)
+        .filter(n => typeof n === "number")
     );
     return Array.from(set).sort((a, b) => a - b);
   }, [episodes]);
@@ -160,31 +163,36 @@ export default function SeriesDetail() {
   if (location.state?.from) trail.push(location.state.from);
   trail.push({ label: title, path: `/series/${id}` });
 
-  const castContent =
-    cast.length > 0 ? (
-      <Card className="shadow-sm">
-        <Card.Header className="fw-semibold bg-white">
-          Cast
-        </Card.Header>
-        <Card.Body>
-          <div className="row g-3">
-            {cast.slice(0, 24).map((m, i) => (
-              <div className="col-6 col-md-4 col-lg-3" key={i}>
-                <PersonCard
-                  person={m}
-                  context={{
-                    from: {
-                      label: title,
-                      path: `/series/${id}`,
-                    },
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        </Card.Body>
-      </Card>
-    ) : null;
+  const footerContent = (
+    <>
+      <NotesSection tconst={id} />
+
+      {cast.length > 0 && (
+        <Card className="shadow-sm">
+          <Card.Header className="fw-semibold bg-white">
+            Cast
+          </Card.Header>
+          <Card.Body>
+            <div className="row g-3">
+              {cast.slice(0, 24).map((m, i) => (
+                <div className="col-6 col-md-4 col-lg-3" key={i}>
+                  <PersonCard
+                    person={m}
+                    context={{
+                      from: {
+                        label: title,
+                        path: `/series/${id}`,
+                      },
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+    </>
+  );
 
   return (
     <Container className="py-4">
@@ -193,7 +201,7 @@ export default function SeriesDetail() {
         title={title}
         poster={posterNode}
         aboutCard={<InfoCard title="About" items={aboutItems} />}
-        footerContent={castContent}
+        footerContent={footerContent}
       >
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h4 className="mb-0">Episodes</h4>

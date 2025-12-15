@@ -29,6 +29,8 @@ import ProfilePanel from "./components/ProfilePanel";
 import UserBookmarksPanel from "./components/user/UserBookmarks";
 import UserRatingsPanel from "./components/user/UserRatings";
 import UserSearchHistoryPanel from "./components/user/UserSearchHistory";
+import UserNotesPanel from "./components/user/UserNotesPanel";
+
 
 // Auth
 import RequireAuth from "./components/common/RequireAuth";
@@ -105,7 +107,8 @@ export default function App() {
             <Route path="bookmarks" element={<UserBookmarksPanel />} />
             <Route path="ratings" element={<UserRatingsPanel />} />
             <Route path="history" element={<UserSearchHistoryPanel />} />
-            <Route path="notes" element={<div>Notes coming soon ✨</div>} />
+            <Route path="notes" element={<UserNotesPanel />} />
+
           </Route>
 
           {/* Fallback */}
